@@ -19,13 +19,15 @@ CORS(app)
 def test():
     return "Server is live ;)"
 
-@app.route("/createchat", methods=['GET'])
+@app.route("/createchat", methods=['POST'])
 def create_chat():
     return_request = {
         "hash": "",
         "status": False,
         "message": "whoops, something went wrong"
     }
+    status_code = 401
+
     try:
         
         hash = ch.generate_hash(hash_byte_length, chat_hash_length)
@@ -49,22 +51,25 @@ def create_chat():
         return_request["hash"] = hash
         return_request["status"] = True
         return_request["message"] = "Succesfully"
+        status_code = 200
         
     except Exception as e:
         print(e)
+        return_request["message"] = str(e)
         
     finally:
-        return jsonify(return_request), 200
+        return jsonify(return_request), status_code
     
-@app.route("/getchathistory", methods=['post'])
+@app.route("/getchathistory", methods=['POST'])
 def get_chat_history():
     
     required_fields = ["hash_plain_text"]
     return_request = {
         "status": False,
         "message": "",
-        "chat_history": [{}]
+        "chat_history": {}
     }
+    status_code = 401
     try:
         
         #validate that all required fields are present in request
@@ -74,7 +79,7 @@ def get_chat_history():
             raise ValueError("request missing fields")
 
         #validate hash exists
-        hash = data["hash"]
+        hash = data["hash_plain_text"]
         chat_doc = mongo.db.chats.find_one({"_id": hash})
         if not chat_doc:
             return_request["message"] = "Chat with given hash doesnt exsist"
@@ -82,15 +87,21 @@ def get_chat_history():
         
         
         #get chat
-        print(chat_doc)
+        #print(chat_doc)
         return_request["chat_history"] = chat_doc["chat_history"]
+        return_request["status"] = True
+        status_code = 200
         
         #reutn the chat
     except Exception as e:
         print(e)
+        status_code = 500
+        return_request["message"] = str(e)
         
     finally:
-        return return_request
+        print()
+        print(return_request)
+        return jsonify(return_request), status_code
     
     
 def check_missing_or_blank_fields(data, required_fields):
