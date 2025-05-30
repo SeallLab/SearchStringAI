@@ -35,14 +35,17 @@ def create_chat():
         #check if generated hash already exists in db
         existing = mongo.db.chats.find_one({"_id": hash})
         if existing:
-            return_request["message"] = "whoops, something went wrong. Try creating a new chat again"
-            return  jsonify(return_request), 401
+            raise ValueError("whoops, something went wrong. Try creating a new chat again")
+
         
         #create new messege history related to the hash in db
         new_chat = {
             "_id": hash,  
-            "chat_history": {},
-            "chat_creation_date": datetime.datetime.now()
+            "chat_creation_date": datetime.datetime.now(),
+            "chat_last_use": datetime.datetime.now(),
+            "chat_history": [{"user_messegae": "", "response": "Hello researcher! This app was designed to aid researchers in developing search strings for systematic literacture riviews! What is your research questions? "}],
+            "message_count": 1,
+            "current_search_string": ""
         }
         
         mongo.db.chats.insert_one(new_chat)
@@ -63,27 +66,26 @@ def create_chat():
 @app.route("/getchathistory", methods=['POST'])
 def get_chat_history():
     
-    required_fields = ["hash_plain_text"]
+    request_required_fields = ["hash_plain_text"]
     return_request = {
         "status": False,
         "message": "",
-        "chat_history": {}
+        "chat_history": []
     }
     status_code = 401
     try:
         
         #validate that all required fields are present in request
         data = request.json
-        if check_missing_or_blank_fields(data, required_fields):
-            return_request["message"] = "request missing fields"
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
             raise ValueError("request missing fields")
 
         #validate hash exists
         hash = data["hash_plain_text"]
         chat_doc = mongo.db.chats.find_one({"_id": hash})
         if not chat_doc:
-            return_request["message"] = "Chat with given hash doesnt exsist"
-            return  jsonify(return_request), 401
+            raise ValueError("Chat with given hash doesnt exsist")
         
         
         #get chat
@@ -92,20 +94,74 @@ def get_chat_history():
         return_request["status"] = True
         status_code = 200
         
-        #reutn the chat
     except Exception as e:
         print(e)
         status_code = 500
         return_request["message"] = str(e)
         
     finally:
-        print()
-        print(return_request)
+        return jsonify(return_request), status_code
+    
+@app.route("/prompt", methods=['POST'])
+def prompt():
+    
+    request_required_fields = ["hash_plain_text", "user_message"]
+    return_request = {
+        "status": False,
+        "llm_response": "",
+        "user_message": ""
+    }
+    status_code = 401
+    try:
+        
+        #validate that all required fields are present in request
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
+            raise ValueError("request missing fields")
+
+        #validate hash exists
+        hash = data["hash_plain_text"]
+        chat_doc = mongo.db.chats.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        
+        #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
+        
+        #Based on type of prompt, query paper db for top paper results if needed (get paper abstracts)
+        
+        #Using paper abstracts(optional), prompt llm with this context to answer user followup or build new search string
+        llm_response = "Need to implement llm response feature"
+        
+        #create new message to store in db
+        new_db_message = {
+            "llm_response": llm_response,
+            "user_message": data["user_message"],
+            "message_dt": datetime.datetime.now(),
+            "message_count": int(chat_doc["message_count"]) + 1   
+        }
+        #store message in db
+        
+        #update db message counter
+        
+        
+        #finalize finished return json
+        return_request["llm_response"] = "need llm prompt"
+        return_request["user_message"] = data["user_message"]
+        return_request["status"] = True
+        status_code = 200
+        #return the llm respnse to the user
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
         return jsonify(return_request), status_code
     
     
-def check_missing_or_blank_fields(data, required_fields):
+def check_missing_or_blank_fields(data, request_required_fields):
     '''returns true if a field is missing or is blank in the data json given from request'''
-    if any(field not in data or data.get(field) in ["", None] for field in required_fields):
+    if any(field not in data or data.get(field) in ["", None] for field in request_required_fields):
         return True
     return False
