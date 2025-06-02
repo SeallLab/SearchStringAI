@@ -43,8 +43,8 @@ def create_chat():
             "_id": hash,  
             "chat_creation_date": datetime.datetime.now(),
             "chat_last_use": datetime.datetime.now(),
-            "chat_history": [{"user_messegae": "", "response": "Hello researcher! This app was designed to aid researchers in developing search strings for systematic literacture riviews! What is your research questions? "}],
-            "message_count": 1,
+            "chat_history": [],
+            "message_count": 0,
             "current_search_string": ""
         }
         
@@ -53,7 +53,7 @@ def create_chat():
         #update return request with correct info
         return_request["hash"] = hash
         return_request["status"] = True
-        return_request["message"] = "Succesfully"
+        return_request["message"] = "Succesfully generated new chat"
         status_code = 200
         
     except Exception as e:
@@ -70,7 +70,9 @@ def get_chat_history():
     return_request = {
         "status": False,
         "message": "",
-        "chat_history": []
+        "message_count": None,
+        "chat_history": [],
+        
     }
     status_code = 401
     try:
@@ -91,6 +93,8 @@ def get_chat_history():
         #get chat
         #print(chat_doc)
         return_request["chat_history"] = chat_doc["chat_history"]
+        return_request["message_count"] = chat_doc["message_count"]
+        return_request["message"] = "Succesfully retireved messsage histoy"
         return_request["status"] = True
         status_code = 200
         
@@ -108,8 +112,10 @@ def prompt():
     request_required_fields = ["hash_plain_text", "user_message"]
     return_request = {
         "status": False,
+        "user_message": "",
         "llm_response": "",
-        "user_message": ""
+        "updated_search_string": ""
+        
     }
     status_code = 401
     try:
@@ -132,22 +138,36 @@ def prompt():
         
         #Using paper abstracts(optional), prompt llm with this context to answer user followup or build new search string
         llm_response = "Need to implement llm response feature"
+        updated_search_string = "uhhhhhhhhhhhhhhhh uhhhhhhhh"
         
         #create new message to store in db
         new_db_message = {
-            "llm_response": llm_response,
             "user_message": data["user_message"],
+            "llm_response": llm_response,
             "message_dt": datetime.datetime.now(),
-            "message_count": int(chat_doc["message_count"]) + 1   
+            "message_number": int(chat_doc["message_count"]) + 1,
+            "search_string": updated_search_string  
         }
-        #store message in db
         
-        #update db message counter
+        # Update the chat document: push new message, update message count and last use
+        mongo.db.chats.update_one(
+            {"_id": hash},
+            {
+                "$push": {"chat_history": new_db_message},
+                "$set": {
+                    "chat_last_use": datetime.datetime.now(),
+                    "message_count": int(chat_doc["message_count"]) + 1,
+                    "current_search_string": updated_search_string
+                }
+            }
+        )
+        
         
         
         #finalize finished return json
         return_request["llm_response"] = "need llm prompt"
         return_request["user_message"] = data["user_message"]
+        return_request["updated_search_string"] = updated_search_string
         return_request["status"] = True
         status_code = 200
         #return the llm respnse to the user
