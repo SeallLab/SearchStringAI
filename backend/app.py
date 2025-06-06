@@ -8,15 +8,18 @@ from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
 from google import genai
 from google.genai.types import HttpOptions
+from pydantic import BaseModel
 
 
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 mongo = PyMongo(app)
+CORS(app)
 hash_byte_length = 16
 chat_hash_length = 8
-CORS(app)
+gemini_key = os.getenv('GEMINI_API_KEY')
+
 
 @app.route("/", methods=['GET'])
 def test():
@@ -131,25 +134,43 @@ def prompt():
 
         #validate hash exists
         hash = data["hash_plain_text"]
-        chat_doc = mongo.db.chats.find_one({"_id": hash})
+        chat_doc = mongo.db.chats.find_one(
+            {"_id": hash},
+            {"chat_history": 0}
+        )
+
+        search_string = chat_doc.get("current_search_string", "No search string")
+
         if not chat_doc:
             raise ValueError("Chat with given hash doesnt exsist")
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         
-        #Based on type of prompt, query paper db for top paper results if needed (get paper abstracts)
         
+        base_prompt = "Anwser the following question: "
+        #Based on type of prompt, query paper db for top paper results if needed (get paper abstracts)   
+
+
+        paper_abstracts = "also tell me how to make a peperoni pizza in one sentence"
         #Using paper abstracts(optional), prompt llm with this context to answer user followup or build new search string
-        llm_response = "Need to implement llm response feature"
-        updated_search_string = "uhhhhhhhhhhhhhhhh uhhhhhhhh"
+        prompt = Prompt()
+        prompt.append_item(base_prompt)
+        prompt.append_item(search_string)
+        prompt.append_item(paper_abstracts)
+        prompt.append_item(data["user_message"])
+        full_prompt = prompt.get_prompt_as_str()
+        print(full_prompt)
+        llm_response = json.loads(pu.call_gemini(gemini_key, full_prompt))
+        print(type(llm_response))
+        updated_search_string = "Need to update the search string"
         
         #create new message to store in db
         new_db_message = {
             "user_message": data["user_message"],
-            "llm_response": llm_response,
+            "llm_response": llm_response["text"],
             "message_dt": datetime.datetime.now(),
             "message_number": int(chat_doc["message_count"]) + 1,
-            "search_string": updated_search_string  
+            "search_string": llm_response["updated_search_string"]  
         }
         
         # Update the chat document: push new message, update message count and last use
@@ -168,7 +189,7 @@ def prompt():
         
         
         #finalize finished return json
-        return_request["llm_response"] = "need llm prompt"
+        return_request["llm_response"] = llm_response
         return_request["user_message"] = data["user_message"]
         return_request["updated_search_string"] = updated_search_string
         return_request["status"] = True
