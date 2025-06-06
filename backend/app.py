@@ -139,30 +139,38 @@ def prompt():
             {"chat_history": 0}
         )
 
-        search_string = chat_doc.get("current_search_string", "No search string")
+        current_search_string = chat_doc.get("current_search_string", "")
 
         if not chat_doc:
             raise ValueError("Chat with given hash doesnt exsist")
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
-        
-        
+        paper_context = ""
         base_prompt = "Anwser the following question: "
-        #Based on type of prompt, query paper db for top paper results if needed (get paper abstracts)   
+        followup_prompt = ""
+        if current_search_string == "":
+            paper_context = "" 
+            #select the base prompt
 
+        else: #query IEEE xplore this is a question followup
 
-        paper_abstracts = "also tell me how to make a peperoni pizza in one sentence"
-        #Using paper abstracts(optional), prompt llm with this context to answer user followup or build new search string
+            paper_context = "" #get context from api include search string in context
+            #update base prompt
+        
+        
+        
         prompt = Prompt()
         prompt.append_item(base_prompt)
-        prompt.append_item(search_string)
-        prompt.append_item(paper_abstracts)
+        prompt.append_item(paper_context)
+        prompt.append_item(followup_prompt)
         prompt.append_item(data["user_message"])
         full_prompt = prompt.get_prompt_as_str()
+        print()
         print(full_prompt)
+        print()
+        #callin llm
         llm_response = json.loads(pu.call_gemini(gemini_key, full_prompt))
-        print(type(llm_response))
-        updated_search_string = "Need to update the search string"
+        updated_search_string = llm_response["updated_search_string"]
         
         #create new message to store in db
         new_db_message = {
@@ -170,7 +178,7 @@ def prompt():
             "llm_response": llm_response["text"],
             "message_dt": datetime.datetime.now(),
             "message_number": int(chat_doc["message_count"]) + 1,
-            "search_string": llm_response["updated_search_string"]  
+            "search_string": updated_search_string  
         }
         
         # Update the chat document: push new message, update message count and last use
@@ -189,7 +197,7 @@ def prompt():
         
         
         #finalize finished return json
-        return_request["llm_response"] = llm_response
+        return_request["llm_response"] = llm_response["text"]
         return_request["user_message"] = data["user_message"]
         return_request["updated_search_string"] = updated_search_string
         return_request["status"] = True
