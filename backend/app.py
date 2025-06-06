@@ -4,6 +4,12 @@ from flask_pymongo import PyMongo
 import os, json, datetime
 from helpers.xploreapi.xploreapi import XPLORE #for thee IEEE xPlore API
 import helpers.cryptographic_helpers as ch #Generating chat hashes and encypting the db stuff
+from helpers.llm.promptBuilder import Prompt #for building prompts
+import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
+from google import genai
+from google.genai.types import HttpOptions
+
+
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
