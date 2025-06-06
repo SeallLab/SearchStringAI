@@ -1,12 +1,9 @@
-from flask import Flask
-from flask_cors import CORS
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from flask_pymongo import PyMongo
-import os
-import json
-import datetime
-
-import helpers.cryptographic_helpers as ch
+import os, json, datetime
+from helpers.xploreapi.xploreapi import XPLORE #for thee IEEE xPlore API
+import helpers.cryptographic_helpers as ch #Generating chat hashes and encypting the db stuff
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
