@@ -146,16 +146,17 @@ def prompt():
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
-        base_prompt = "Anwser the following question: "
+        base_prompt = ""
         followup_prompt = ""
-        if current_search_string == "":
+        user_input = f'User Input: {data["user_message"]} \n \n'
+        end_specification = open("helpers/llm/prompts/specificationFollowup.txt", "r").read()
+        if current_search_string == "" or current_search_string == " ":
             paper_context = "" 
-            #select the base prompt
+            base_prompt = open("helpers/llm/prompts/baseQuestionPrompt.txt", "r").read()
 
         else: #query IEEE xplore this is a question followup
-
-            paper_context = "" #get context from api include search string in context
-            #update base prompt
+            base_prompt = open("helpers/llm/prompts/baseFollowupPrompt.txt", "r").read()
+            paper_context = f'Current search string: {current_search_string} \n \n'
         
         
         
@@ -163,7 +164,8 @@ def prompt():
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(followup_prompt)
-        prompt.append_item(data["user_message"])
+        prompt.append_item(user_input)
+        prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
         print()
         print(full_prompt)
@@ -171,6 +173,10 @@ def prompt():
         #callin llm
         llm_response = json.loads(pu.call_gemini(gemini_key, full_prompt))
         updated_search_string = llm_response["updated_search_string"]
+        if llm_response["has_chaged"]:
+            updated_search_string = llm_response["updated_search_string"]
+        else:
+            updated_search_string = current_search_string
         
         #create new message to store in db
         new_db_message = {
