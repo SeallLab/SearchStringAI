@@ -5,6 +5,8 @@ import { useParams } from 'react-router-dom'
 function ChatPage() {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
+  const [searchString, setSearchString] = useState('')
+
   const [serverMessage, setServerMessage] = useState('')
   const [error, setError] = useState(null)
   const { chatHash } = useParams()
@@ -48,6 +50,10 @@ function ChatPage() {
         })
 
         setMessages(formattedMessages)
+        if (data.message_count > 0) {//set searchstring to the one in last message exchange with the user
+          setSearchString(data.chat_history[data.message_count-1].search_string)
+        }
+
       }
     }
 
@@ -82,7 +88,8 @@ function ChatPage() {
       const data = await response.json()
 
       if (data.status === true) {
-        setMessages((prev) => [...prev, { sender: 'ai', text: data.response }])
+        setMessages((prev) => [...prev, { sender: 'ai', text: data.llm_response }])
+        setSearchString(data.updated_search_string)
       } else {
         setMessages((prev) => [...prev, { sender: 'ai', text: "AI couldn't respond." }])
       }
@@ -104,6 +111,9 @@ function ChatPage() {
             <strong>{msg.sender === 'user' ? 'You' : 'AI'}:</strong> {msg.text}
           </div>
         ))}
+      </div>
+      <div>
+        <p> {searchString} </p>
       </div>
 
       <div>
