@@ -36,19 +36,31 @@ function ChatPage() {
       }
     }
 
-    const fetchChat = async () => {
+    const populateChatHistory = async () => {
       const data = await getChat()
-      console.log(data)
-      // setMessages(data.history) or whatever
+
+      if (data?.status && Array.isArray(data.chat_history)) {
+        const formattedMessages = []
+
+        data.chat_history.forEach((entry) => {
+          formattedMessages.push({ sender: 'user', text: entry.user_message })
+          formattedMessages.push({ sender: 'ai', text: entry.llm_response })
+        })
+
+        setMessages(formattedMessages)
+      }
     }
 
     if (chatHash) {
-      fetchChat()
+      populateChatHistory()
+      console.log(messages)
     }
-  }, [chatHash]) // only depends on chatHash now
+  }, [chatHash])
+
 
 
   const sendMessage = async () => {
+    console.log(messages)
     if (!newMessage.trim()) return
 
     // Add user's message locally
@@ -56,14 +68,14 @@ function ChatPage() {
 
     try {
       // Replace this with your actual POST request to send to AI
-      const response = await fetch('http://127.0.0.1:5000/sendmessage', {
+      const response = await fetch('http://127.0.0.1:5000/prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           hash_plain_text: chatHash,
-          message: newMessage,
+          user_message: newMessage,
         }),
       })
 
