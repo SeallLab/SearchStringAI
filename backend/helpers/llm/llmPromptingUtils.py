@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from helpers.llm.llmReturnFormat import Response
 
 
 def call_gemini(api_key: str, prompt: str) -> str:
