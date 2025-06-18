@@ -125,7 +125,7 @@ function ChatPage() {
           style={{ width: '70%', padding: '0.5rem' }}
         />
         <button onClick={sendMessage} style={{ marginLeft: '0.5rem' }}>
-          Send {chatHash}
+          Send
         </button>
       </div>
     </div>
