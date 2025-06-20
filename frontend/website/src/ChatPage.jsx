@@ -6,9 +6,12 @@ function ChatPage() {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [searchString, setSearchString] = useState('')
-  const [serverMessage, setServerMessage] = useState('')
+  const [searchStringExists, setSearchStringExists] = useState(false)
+
+
   const [error, setError] = useState(null)
   const { chatHash } = useParams()
+  const [searchStringCopied, setSSC] = useState(false)
 
   useEffect(() => {
     if (chatHash) {
@@ -48,6 +51,7 @@ function ChatPage() {
         })
 
         setMessages(formattedMessages)
+
         if (data.message_count > 0) {
           setSearchString(data.chat_history[data.message_count - 1].search_string)
         }
@@ -56,12 +60,14 @@ function ChatPage() {
 
     if (chatHash) {
       populateChatHistory()
-      console.log(messages)
     }
   }, [chatHash])
 
+  useEffect(() => {
+    setSearchStringExists(searchString.trim() !== '')
+  }, [searchString])
+
   const sendMessage = async () => {
-    console.log(messages)
     if (!newMessage.trim()) return
 
     setMessages((prev) => [...prev, { sender: 'user', text: newMessage }])
@@ -86,6 +92,7 @@ function ChatPage() {
       } else {
         setMessages((prev) => [...prev, { sender: 'ai', text: "AI couldn't respond." }])
       }
+
     } catch (err) {
       console.error(err)
       setMessages((prev) => [...prev, { sender: 'ai', text: 'Error sending message.' }])
@@ -100,17 +107,24 @@ function ChatPage() {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <div key={i}>
-            <strong>{msg.sender === 'user' ? 'You' : 'AI'}:</strong> {msg.text}
+          <div key={i} className={`message ${msg.sender}`}>
+            {msg.text}
           </div>
         ))}
       </div>
 
-      <div className="search-string">
-        <p>{searchString}</p>
+      {searchStringExists && (
+        <div className="search-string-div">
+        <p className="search-string">{searchString}</p>
+        <button
+          className="copy-button"
+          onClick={() => navigator.clipboard.writeText(searchString)}>
+          Copy Search String
+        </button>
       </div>
+      )}
 
-      <div>
+      <div className="chat-input-container">
         <input
           type="text"
           value={newMessage}
@@ -122,6 +136,8 @@ function ChatPage() {
           Send
         </button>
       </div>
+
+      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
     </div>
   )
 }
