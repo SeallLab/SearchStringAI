@@ -83,6 +83,16 @@ function HomePage() {
           Create New Chat
         </button>
       </div>
+      <div>
+        <h4>About This Bot</h4>
+        <p>
+          This AI bot is designed to help researchers in generating search strings for their systematic
+          literacture reviews!
+          Create a chat and start by sending your research question! 
+          After which you can provide feedback to further enhance the search string or ask questions to the bot reguarding 
+          the generated searchs string. Make sure you save the chat hash!
+        </p>
+      </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 

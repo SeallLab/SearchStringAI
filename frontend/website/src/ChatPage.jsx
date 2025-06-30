@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-
+import './ChatPage.css'
 
 function ChatPage() {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [searchString, setSearchString] = useState('')
+  const [searchStringExists, setSearchStringExists] = useState(false)
 
-  const [serverMessage, setServerMessage] = useState('')
+
   const [error, setError] = useState(null)
   const { chatHash } = useParams()
-
+  const [searchStringCopied, setSSC] = useState(false)
 
   useEffect(() => {
     if (chatHash) {
@@ -50,30 +51,28 @@ function ChatPage() {
         })
 
         setMessages(formattedMessages)
-        if (data.message_count > 0) {//set searchstring to the one in last message exchange with the user
-          setSearchString(data.chat_history[data.message_count-1].search_string)
-        }
 
+        if (data.message_count > 0) {
+          setSearchString(data.chat_history[data.message_count - 1].search_string)
+        }
       }
     }
 
     if (chatHash) {
       populateChatHistory()
-      console.log(messages)
     }
   }, [chatHash])
 
-
+  useEffect(() => {
+    setSearchStringExists(searchString.trim() !== '')
+  }, [searchString])
 
   const sendMessage = async () => {
-    console.log(messages)
     if (!newMessage.trim()) return
 
-    // Add user's message locally
     setMessages((prev) => [...prev, { sender: 'user', text: newMessage }])
 
     try {
-      // Replace this with your actual POST request to send to AI
       const response = await fetch('http://127.0.0.1:5000/prompt', {
         method: 'POST',
         headers: {
@@ -93,6 +92,7 @@ function ChatPage() {
       } else {
         setMessages((prev) => [...prev, { sender: 'ai', text: "AI couldn't respond." }])
       }
+
     } catch (err) {
       console.error(err)
       setMessages((prev) => [...prev, { sender: 'ai', text: 'Error sending message.' }])
@@ -102,32 +102,42 @@ function ChatPage() {
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>Chat with Search String AI</h2>
+    <div className="chat-container">
+      <h2 className="chat-header">Chat with Search String AI</h2>
 
-      <div style={{ border: '1px solid #ccc', padding: '1rem', height: '300px', overflowY: 'scroll', marginBottom: '1rem' }}>
+      <div className="chat-history">
         {messages.map((msg, i) => (
-          <div key={i}>
-            <strong>{msg.sender === 'user' ? 'You' : 'AI'}:</strong> {msg.text}
+          <div key={i} className={`message ${msg.sender}`}>
+            {msg.text}
           </div>
         ))}
       </div>
-      <div>
-        <p> {searchString} </p>
-      </div>
 
-      <div>
+      {searchStringExists && (
+        <div className="search-string-div">
+        <p className="search-string">{searchString}</p>
+        <button
+          className="copy-button"
+          onClick={() => navigator.clipboard.writeText(searchString)}>
+          Copy Search String
+        </button>
+      </div>
+      )}
+
+      <div className="chat-input-container">
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type your message..."
-          style={{ width: '70%', padding: '0.5rem' }}
+          className="chat-input"
         />
-        <button onClick={sendMessage} style={{ marginLeft: '0.5rem' }}>
-          Send {chatHash}
+        <button onClick={sendMessage} className="send-button">
+          Send
         </button>
       </div>
+
+      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
     </div>
   )
 }
