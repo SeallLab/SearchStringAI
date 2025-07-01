@@ -1,26 +1,57 @@
 import pandas as pd
 import random
 
-def copy_random_rows(input_file, output_file, num_rows=5):
- 
+def strID_to_int(id_str):
+    """
+    Takes the dataset's string ID and returns just the int version.
+    Example: 'SLR-000123456' → 123456
+    """
+    id = id_str.split("-")[1].lstrip("0")
+    return int(id)
+
+def copy_random_rows(input_file, output_file, num_rows=5, rs=42):
+    """
+    Reads an Excel file, randomly samples rows, and saves to a new Excel file.
+    """
     df = pd.read_excel(input_file)
 
-    # Total number of available rows
     total_rows = len(df)
     print(f"Total rows in file: {total_rows}")
     num_rows = min(num_rows, total_rows)
 
-    # Randomly sample rows 
-    sampled_df = df.sample(n=num_rows, random_state=42)
+    sampled_df = df.sample(n=num_rows, random_state=rs)
 
-    # Write to a new Excel file
+    if 'ID' not in sampled_df.columns:
+        raise KeyError("Column 'ID' not found in sampled data.")
+
+    # Save the sampled data without modifying IDs yet
     sampled_df.to_excel(output_file, index=False)
     print(f"Randomly copied {num_rows} rows to '{output_file}'.")
 
+def modify_id_column(input_file, output_file):
+    """
+    Reads an Excel file, converts the 'ID' column to int using custom logic,
+    and saves the updated data to a new Excel file.
+    """
+    df = pd.read_excel(input_file)
+
+    if 'ID' not in df.columns:
+        raise KeyError("Column 'ID' not found.")
+
+    df['ID'] = df['ID'].apply(strID_to_int)
+
+    df.to_excel(output_file, index=False)
+    print(f"'ID' column converted to integers and saved to '{output_file}'.")
+
 # ====== RUN SCRIPT ======
 if __name__ == "__main__":
-    input_excel = "dataset/final_dataset-June-2023.xlsx"            
-    output_excel = "randomRows.xlsx"
-    rows_to_copy = 25                      # How many random rows to copy
+    # Step 1: Sample rows
+    input_excel = "dataset/final_dataset-June-2023.xlsx"
+    sampled_excel = "selectedPapers.xlsx"
+    final_output = "selectedPapers.xlsx"
+    rows_to_copy = 25
 
-    copy_random_rows(input_excel, output_excel, rows_to_copy)
+    copy_random_rows(input_excel, sampled_excel, rows_to_copy)
+
+    # Step 2: Modify ID column in the sampled file
+    modify_id_column(sampled_excel, final_output)
