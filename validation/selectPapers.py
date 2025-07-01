@@ -28,9 +28,10 @@ def copy_random_rows(input_file, output_file, num_rows=5, rs=42):
     sampled_df.to_excel(output_file, index=False)
     print(f"Randomly copied {num_rows} rows to '{output_file}'.")
 
-def modify_id_column(input_file, output_file):
+def modify_columns(input_file, output_file):
     """
     Reads an Excel file, converts the 'ID' column to int using custom logic,
+    adds blank 'research_question' and 'search_string' columns,
     and saves the updated data to a new Excel file.
     """
     df = pd.read_excel(input_file)
@@ -40,8 +41,13 @@ def modify_id_column(input_file, output_file):
 
     df['ID'] = df['ID'].apply(strID_to_int)
 
+    # Add new blank columns
+    df['research_question'] = ""
+    df['search_string'] = ""
+
     df.to_excel(output_file, index=False)
-    print(f"'ID' column converted to integers and saved to '{output_file}'.")
+    print(f"'ID' column converted and new columns added. Saved to '{output_file}'.")
+
 
 def sort_by_id(input_file, output_file):
     """
@@ -71,6 +77,6 @@ if __name__ == "__main__":
 
     copy_random_rows(input_excel, sampled_excel, rows_to_copy)
 
-    modify_id_column(sampled_excel, modified_output)
+    modify_columns(sampled_excel, modified_output)
 
     sort_by_id(modified_output, sorted_output)
