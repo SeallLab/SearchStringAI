@@ -43,15 +43,34 @@ def modify_id_column(input_file, output_file):
     df.to_excel(output_file, index=False)
     print(f"'ID' column converted to integers and saved to '{output_file}'.")
 
+def sort_by_id(input_file, output_file):
+    """
+    Reads an Excel file, sorts rows by the 'ID' column ascending,
+    and saves the sorted data to a new Excel file.
+    """
+    df = pd.read_excel(input_file)
+    
+    if 'ID' not in df.columns:
+        raise KeyError("Column 'ID' not found.")
+    
+    df_sorted = df.sort_values(by='ID', ascending=True)
+    df_sorted.to_excel(output_file, index=False)
+    print(f"Data sorted by 'ID' and saved to '{output_file}'.")
+
 # ====== RUN SCRIPT ======
 if __name__ == "__main__":
     # Step 1: Sample rows
     input_excel = "dataset/final_dataset-June-2023.xlsx"
     sampled_excel = "selectedPapers.xlsx"
-    final_output = "selectedPapers.xlsx"
+    modified_output = "selectedPapers.xlsx"
+    sorted_output = "selectedPapers.xlsx"
+    
+
+
     rows_to_copy = 25
 
     copy_random_rows(input_excel, sampled_excel, rows_to_copy)
 
-    # Step 2: Modify ID column in the sampled file
-    modify_id_column(sampled_excel, final_output)
+    modify_id_column(sampled_excel, modified_output)
+
+    sort_by_id(modified_output, sorted_output)
