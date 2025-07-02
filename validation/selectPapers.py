@@ -73,7 +73,7 @@ if __name__ == "__main__":
     
 
 
-    rows_to_copy = 25
+    rows_to_copy = 300
 
     copy_random_rows(input_excel, sampled_excel, rows_to_copy)
 
