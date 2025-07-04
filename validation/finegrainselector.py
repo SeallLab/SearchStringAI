@@ -1,6 +1,6 @@
 import pandas as pd
 
-def count_valid_entries(file_path):
+def select_valid_entries(file_path, output_file_name):
     # Load the Excel file
     df = pd.read_excel(file_path)
 
@@ -10,13 +10,14 @@ def count_valid_entries(file_path):
         'number_of_search_strings', 
         'research_question', 
         'search_string',
-        'notes'
+        'notes',
+        'objective'
     ]
     for col in required_cols:
         if col not in df.columns:
             raise ValueError(f"Missing required column: '{col}'")
 
-    # Apply all conditions
+    # Apply all conditions for valid data entries (have to have 1 search string, cant have notes(this means its a wired entry), have to have the research questions, etc.)
     valid_rows = df[
         df['number_of_research_questions'].notna() &
         pd.to_numeric(df['number_of_research_questions'], errors='coerce').notna() &
@@ -42,9 +43,13 @@ def count_valid_entries(file_path):
     print(f"Number of valid entries: {len(valid_rows)}")
 
     # Save the valid entries to a new Excel file
-    valid_rows.to_excel("final paper selection.xlsx", index=False)
+    valid_rows.to_excel(output_file_name, index=False)
 
 
 
+if __name__ == "__main__":
+    
+    input_file = "dataset/final_dataset-June-2023-modified.xlsx"
+    output_file_name = "final_paper_selection.xlsx"
 
-count_valid_entries("selectedPapers.xlsx")
+    select_valid_entries(input_file, output_file_name)
