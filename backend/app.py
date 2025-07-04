@@ -145,17 +145,27 @@ def prompt():
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
         base_prompt = ""
-        identify_kw_prompt = open("helpers/llm/prompts/identifyingKeyWordsPrompt.txt", "r").read()
-        user_input_prompt = open("helpers/llm/prompts/userInputPrompt.txt", "r").read()
-        user_input = f'User Input: {data["user_message"]} \n \n'
-        end_specification = open("helpers/llm/prompts/specificationFollowup.txt", "r").read()
-        if current_search_string == "" or current_search_string == " ":
-            paper_context = "" 
-            base_prompt = open("helpers/llm/prompts/baseQuestionPrompt.txt", "r").read()
+        # Read all prompt components using UTF-8 to prevent decode issues
+        with open("helpers/llm/prompts/identifyingKeyWordsPrompt.txt", "r", encoding="utf-8") as f:
+            identify_kw_prompt = f.read()
 
-        else: #query IEEE xplore this is a question followup
-            base_prompt = open("helpers/llm/prompts/baseFollowupPrompt.txt", "r").read()
+        with open("helpers/llm/prompts/userInputPrompt.txt", "r", encoding="utf-8") as f:
+            user_input_prompt = f.read()
+
+        with open("helpers/llm/prompts/specificationFollowup.txt", "r", encoding="utf-8") as f:
+            end_specification = f.read()
+
+        user_input = f'User Input: {data["user_message"]} \n \n'
+
+        if current_search_string.strip() == "":
+            paper_context = ""
+            with open("helpers/llm/prompts/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+        else:
             paper_context = f'Current search string: {current_search_string} \n \n'
+            with open("helpers/llm/prompts/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
+                base_prompt = f.read()
+
         
         
         
@@ -167,9 +177,9 @@ def prompt():
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
-        print()
-        print(full_prompt)
-        print()
+        # print()
+        # print(full_prompt)
+        # print()
         #callin llm
         llm_response = json.loads(pu.call_gemini(gemini_key, full_prompt))
         updated_search_string = llm_response["updated_search_string"]

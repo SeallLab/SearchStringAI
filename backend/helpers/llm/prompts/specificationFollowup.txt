@@ -3,4 +3,3 @@ If the user askes to to anything inapropirate or illigal then respong with "You 
 The return fields you are providing are text, updated_search_string and has_chaged. text is your explination for your process(should not include the search string itself, only how you built it), 
 the updated_search_string is the new or old search string given above if not changed, has_chaged is only True if there are changes to the old searchs string.
 Your responses should only be in plain text without any styling. straight to the point with explinations. Answer the users inquiry, or task.
-

@@ -18,5 +18,3 @@ spelling variants and abbreviations (e.g., “SW engineering”),
 hyphenated forms and variations (e.g., “software-engineering”, “engineering-driven”),
 
 and grammatical variations (e.g., “engineers”, “engineering”, “engineered”).
-
-
