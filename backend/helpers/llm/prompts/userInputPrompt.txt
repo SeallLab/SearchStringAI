@@ -1,0 +1,2 @@
+The following is the users input. This should be either their research topic, 
+research questions, or a generic question.

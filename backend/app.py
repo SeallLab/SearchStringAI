@@ -145,7 +145,8 @@ def prompt():
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
         base_prompt = ""
-        followup_prompt = ""
+        identify_kw_prompt = open("helpers/llm/prompts/identifyingKeyWordsPrompt.txt", "r").read()
+        user_input_prompt = open("helpers/llm/prompts/userInputPrompt.txt", "r").read()
         user_input = f'User Input: {data["user_message"]} \n \n'
         end_specification = open("helpers/llm/prompts/specificationFollowup.txt", "r").read()
         if current_search_string == "" or current_search_string == " ":
@@ -161,7 +162,8 @@ def prompt():
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
-        prompt.append_item(followup_prompt)
+        prompt.append_item(identify_kw_prompt)
+        prompt.append_item(user_input_prompt)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
