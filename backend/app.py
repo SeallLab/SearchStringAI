@@ -17,6 +17,7 @@ CORS(app)
 hash_byte_length = 16
 chat_hash_length = 8
 gemini_key = os.getenv('GEMINI_API_KEY')
+gpt_key = os.getenv('GPT_API_KEY')
 
 
 @app.route("/", methods=['GET'])
@@ -116,6 +117,7 @@ def prompt():
     request_required_fields = ["hash_plain_text", "user_message"]
     return_request = {
         "status": False,
+        "ai_used": "",
         "user_message": "",
         "llm_response": "",
         "updated_search_string": ""
@@ -181,7 +183,28 @@ def prompt():
         # print(full_prompt)
         # print()
         #callin llm
-        llm_response = json.loads(pu.call_gemini(gemini_key, full_prompt))
+        llm_response = {}
+        ai_used = ""
+        try:
+            llm_response = pu.call_gemini(gemini_key, full_prompt)
+            ai_used = "Gemini"
+
+        except Exception as e:
+            print(f"Gemini call failed, falling back to ChatGPT: {e}")
+            llm_response = pu.call_chatgpt(gpt_key, full_prompt)
+            ai_used = "chatGPT"
+
+        # try:
+        #     llm_response = pu.call_chatgpt(gpt_key, full_prompt)
+        #     ai_used = "chatGPT"
+            
+        # except Exception as e:
+        #     print(f"GPT call failed, falling back to Gemini: {e}")
+        #     llm_response = pu.call_gemini(gemini_key, full_prompt)
+        #     ai_used = "Gemini"
+
+            
+
         updated_search_string = llm_response["updated_search_string"]
         if llm_response["has_chaged"]:
             updated_search_string = llm_response["updated_search_string"]
@@ -216,6 +239,7 @@ def prompt():
         return_request["llm_response"] = llm_response["text"]
         return_request["user_message"] = data["user_message"]
         return_request["updated_search_string"] = updated_search_string
+        return_request["ai_used"] = ai_used
         return_request["status"] = True
         status_code = 200
         #return the llm respnse to the user
