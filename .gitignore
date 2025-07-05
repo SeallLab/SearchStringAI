@@ -176,3 +176,5 @@ cython_debug/
 
 backend/tests.py
 backend/env
+
+validation/~$final_paper_selection.xlsx
