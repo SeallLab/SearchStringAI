@@ -65,13 +65,24 @@ def compute_jaccard_column(excel_path):
     # Save back to the same Excel file
     df.to_excel(excel_path, index=False)
 
-    # Compute and print average similarity
+    
+    # Compute and print average, min, and max similarity
     avg1 = average_jaccard_score(jaccard_scores)
     avg2 = average_jaccard_score(jaccard_scores_followup)
+    min1 = min(jaccard_scores) if jaccard_scores else -1
+    max1 = max(jaccard_scores) if jaccard_scores else -1
+    min2 = min(jaccard_scores_followup) if jaccard_scores_followup else -1
+    max2 = max(jaccard_scores_followup) if jaccard_scores_followup else -1
 
-    print(f"\nAverage Jaccard Similarity: {avg1}")
-    print(f"Average Jaccard Similarity for followup: {avg2}")
-    print()
+    print(f"\nBase vs Bot:")
+    print(f"  Average: {avg1:.4f}")
+    print(f"  Min:     {min1:.4f}")
+    print(f"  Max:     {max1:.4f}")
+
+    print(f"\nBase vs Bot-Followup:")
+    print(f"  Average: {avg2:.4f}")
+    print(f"  Min:     {min2:.4f}")
+    print(f"  Max:     {max2:.4f}")
 
 def average_jaccard_score(scores):
     if scores:
