@@ -1,11 +1,28 @@
 import requests
 
-query = "global software development"
-url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={query}&limit=5&fields=title,abstract"
 
-res = requests.get(url)
-papers = res.json()['data']
+def get_abstracts_semantic_scholar(quantity: int, search_query: str) -> str:
+    '''
+    returns (quantity) paper abstracts from semantic scholar given the search_query
+    '''
 
-for paper in papers:
-    print(f"Title: {paper['title']}")
-    print(f"Abstract: {paper.get('abstract', 'No abstract available')}\n")
+    url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={search_query}&limit={quantity}&fields=abstract"
+
+    res = requests.get(url)
+    papers = res.json()['data']
+    entries = []
+    for paper in papers:
+        p = []
+
+        p.append(f"Title: {paper['title']}\n")
+        p.append(f"Abstract: {paper.get('abstract', 'No abstract available')}\n\n")
+
+        entries.append(''.join(p))
+    return ''.join(entries)
+
+
+
+q = "software engineering"
+
+s = get_abstracts_semantic_scholar(5, q)
+print(s)
