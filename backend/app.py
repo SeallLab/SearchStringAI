@@ -3,7 +3,8 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 import os, json, datetime
 from helpers.xploreapi.xploreapi import XPLORE #for thee IEEE xPlore API
-import helpers.cryptographic_helpers as ch #Generating chat hashes and encypting the db stuff
+import helpers.scholarlyapi as sa #This is for querying and getting paper abstracts
+import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
 # from google.genai.types import HttpOptions
@@ -164,7 +165,13 @@ def prompt():
             with open("helpers/llm/prompts/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
         else:
-            paper_context = f'Current search string: {current_search_string} \n \n'
+            abstracts = sa.get_abstracts_semantic_scholar(5, current_search_string)
+            if isinstance(abstracts, str): #if there was no error getting the abstracts
+                paper_context = f'Current search string: {current_search_string} \n \n Here is the tittles and abstracts returned by the current search string for context: \n' + abstracts 
+            else:
+                paper_context = f'Current search string: {current_search_string} \n \n'
+                   
+                
             with open("helpers/llm/prompts/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
 
@@ -179,9 +186,9 @@ def prompt():
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
-        # print()
-        # print(full_prompt)
-        # print()
+        print()
+        print(full_prompt)
+        print()
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -194,14 +201,6 @@ def prompt():
             llm_response = pu.call_chatgpt(gpt_key, full_prompt)
             ai_used = "chatGPT"
 
-        # try:
-        #     llm_response = pu.call_chatgpt(gpt_key, full_prompt)
-        #     ai_used = "chatGPT"
-            
-        # except Exception as e:
-        #     print(f"GPT call failed, falling back to Gemini: {e}")
-        #     llm_response = pu.call_gemini(gemini_key, full_prompt)
-        #     ai_used = "Gemini"
 
             
 
