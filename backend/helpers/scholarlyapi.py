@@ -1,4 +1,5 @@
 import requests
+import traceback
 
 
 def get_abstracts_semantic_scholar(quantity: int, search_query: str) -> str:
@@ -7,19 +8,30 @@ def get_abstracts_semantic_scholar(quantity: int, search_query: str) -> str:
     '''
 
     url = f"https://api.semanticscholar.org/graph/v1/paper/search?query={search_query}&limit={quantity}&fields=abstract"
+        
+    
+    try:
+        entries = []
+        res = requests.get(url)
+        papers = res.json()['data']
+        
+        for paper in papers:
+            p = []
 
-    res = requests.get(url)
-    papers = res.json()['data']
-    entries = []
-    for paper in papers:
-        p = []
+            p.append(f"Title: {paper['title']}\n")
+            p.append(f"Abstract: {paper.get('abstract', 'No abstract available')}\n\n")
 
-        p.append(f"Title: {paper['title']}\n")
-        p.append(f"Abstract: {paper.get('abstract', 'No abstract available')}\n\n")
-
-        entries.append(''.join(p))
-    return ''.join(entries)
-
+            entries.append(''.join(p))
+        
+    
+    except Exception as e:
+        print(f"Error getting paper abstracts: {e}")
+        traceback.print_exc()
+        return ""
+    finally:
+        
+        return ''.join(entries)
+        
 
 
 q = "software engineering"
