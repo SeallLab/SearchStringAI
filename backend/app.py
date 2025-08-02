@@ -256,3 +256,120 @@ def check_missing_or_blank_fields(data, request_required_fields):
     if any(field not in data or data.get(field) in ["", None] for field in request_required_fields):
         return True
     return False
+
+valid_ss_conversions = {"General":"", "IEEE Xplore":"ieeeXploreformat.txt", "Google Scholar":"googlescholarformat.txt"}
+@app.route("/convertsearchstring", methods=['POST'])
+def prompt():
+    request_required_fields = ["search_string", "current_format", "conversion_format"]
+    return_request = {
+        "status": False,
+        "ai_used": "",
+        "updated_search_string": ""
+    }
+    status_code = 401
+    try:
+        
+        
+        #validate that all required fields are present in request66
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+            raise ValueError("request missing fields")
+
+        #Basic error checking
+        if data["current_format"] == data["conversion_format"]:
+            raise ValueError("Need to convert string to different format than original")
+        elif data["search_string"].strip() == "":
+            raise ValueError("No search string to convert")
+        elif data["current_format"] not in valid_ss_conversions or data["conversion_format"] not in valid_ss_conversions:
+            raise ValueError("None Supported conversion format picked")
+        
+        ####################
+        prompt.append_item(base_prompt)
+        prompt.append_item(paper_context)
+        prompt.append_item(identify_kw_prompt)
+        prompt.append_item(user_input_prompt)
+        prompt.append_item(user_input)
+        
+        #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
+        with open("helpers/llm/prompts/conversion/BasePrompt.txt", "r", encoding="utf-8") as f:
+            base_prompt = f.read()       
+        with open("helpers/llm/prompts/conversion/userInputPrompt.txt", "r", encoding="utf-8") as f:
+            user_input_prompt = f.read()
+
+        with open("helpers/llm/prompts/conversion/specificationFollowup.txt", "r", encoding="utf-8") as f:
+            end_specification = f.read()
+
+        with open("helpers/llm/prompts/conversion/" + valid_ss_conversions[data["current_format"]], "r", encoding="utf-8") as f:
+            end_specification = f.read()
+        search_string = f'User Input: {data["search_string"]} \n \n'
+
+        
+        
+        
+        
+        prompt = Prompt()
+        prompt.append_item(end_specification)
+        full_prompt = prompt.get_prompt_as_str()
+        print()
+        print(full_prompt)
+        print()
+        #callin llm
+        llm_response = {}
+        ai_used = ""
+        try:
+            llm_response = pu.call_gemini(gemini_key, full_prompt)
+            ai_used = "Gemini"
+
+        except Exception as e:
+            print(f"Gemini call failed, falling back to ChatGPT: {e}")
+            llm_response = pu.call_chatgpt(gpt_key, full_prompt)
+            ai_used = "chatGPT"
+
+
+            
+
+        updated_search_string = llm_response["updated_search_string"]
+        if llm_response["has_chaged"]:
+            updated_search_string = llm_response["updated_search_string"]
+        else:
+            updated_search_string = current_search_string
+        
+        #create new message to store in db
+        new_db_message = {
+            "user_message": data["user_message"],
+            "llm_response": llm_response["text"],
+            "message_dt": datetime.datetime.now(),
+            "message_number": int(chat_doc["message_count"]) + 1,
+            "search_string": updated_search_string  
+        }
+        
+        # Update the chat document: push new message, update message count and last use
+        mongo.db.chats.update_one(
+            {"_id": hash},
+            {
+                "$push": {"chat_history": new_db_message},
+                "$set": {
+                    "chat_last_use": datetime.datetime.now(),
+                    "message_count": int(chat_doc["message_count"]) + 1,
+                    "current_search_string": updated_search_string
+                }
+            }
+        )
+        
+        
+        
+        #finalize finished return json
+        return_request["llm_response"] = llm_response["text"]
+        return_request["user_message"] = data["user_message"]
+        return_request["updated_search_string"] = updated_search_string
+        return_request["ai_used"] = ai_used
+        return_request["status"] = True
+        status_code = 200
+        #return the llm respnse to the user
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
+        return jsonify(return_request), status_code
