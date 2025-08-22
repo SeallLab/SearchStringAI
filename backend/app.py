@@ -257,15 +257,18 @@ def check_missing_or_blank_fields(data, request_required_fields):
         return True
     return False
 
-valid_ss_conversions = {"General":"", "IEEE Xplore":"ieeeXploreformat.txt", "Google Scholar":"googlescholarformat.txt"}
+valid_ss_conversions = {"General":"4_generalformat.txt", "IEEE Xplore":"4_ieeeXploreformat.txt", "Google Scholar":"4_googlescholarformat.txt"}
 @app.route("/convertsearchstring", methods=['POST'])
-def prompt():
+def convert():
     request_required_fields = ["search_string", "current_format", "conversion_format"]
     return_request = {
         "status": False,
         "ai_used": "",
+        "llm_response": "",
         "updated_search_string": ""
+        
     }
+    
     status_code = 401
     try:
         
@@ -284,35 +287,41 @@ def prompt():
             raise ValueError("None Supported conversion format picked")
         
         ####################
-        prompt.append_item(base_prompt)
-        prompt.append_item(paper_context)
-        prompt.append_item(identify_kw_prompt)
-        prompt.append_item(user_input_prompt)
-        prompt.append_item(user_input)
+        
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
-        with open("helpers/llm/prompts/conversion/BasePrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/conversion/1_BasePrompt.txt", "r", encoding="utf-8") as f:
             base_prompt = f.read()       
-        with open("helpers/llm/prompts/conversion/userInputPrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/conversion/2_userInputPrompt.txt", "r", encoding="utf-8") as f:
             user_input_prompt = f.read()
-
+        search_string = f'User Input: {data["search_string"]} \n \n'
+        
+        file_1 = ""
+        with open("helpers/llm/prompts/conversion/" + str(valid_ss_conversions[data["current_format"]]), "r", encoding="utf-8") as f:
+            current_format = f.read()
+            
+        with open("helpers/llm/prompts/conversion/5_conversionContext.txt", "r", encoding="utf-8") as f:
+            convert_to_context = f.read()
+        with open("helpers/llm/prompts/conversion/" + str(valid_ss_conversions[data["conversion_format"]]), "r", encoding="utf-8") as f:
+            convert_to_format = f.read()
+        
+        
         with open("helpers/llm/prompts/conversion/specificationFollowup.txt", "r", encoding="utf-8") as f:
             end_specification = f.read()
-
-        with open("helpers/llm/prompts/conversion/" + valid_ss_conversions[data["current_format"]], "r", encoding="utf-8") as f:
-            end_specification = f.read()
-        search_string = f'User Input: {data["search_string"]} \n \n'
-
-        
-        
-        
         
         prompt = Prompt()
+        prompt.append_item(base_prompt)
+        prompt.append_item(user_input_prompt)
+        prompt.append_item(search_string)
+        prompt.append_item(current_format)
+        prompt.append_item(convert_to_context)
+        prompt.append_item(convert_to_format)
         prompt.append_item(end_specification)
+        
         full_prompt = prompt.get_prompt_as_str()
-        print()
-        print(full_prompt)
-        print()
+        # print()
+        # print(full_prompt)
+        # print()
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -332,35 +341,10 @@ def prompt():
         if llm_response["has_chaged"]:
             updated_search_string = llm_response["updated_search_string"]
         else:
-            updated_search_string = current_search_string
-        
-        #create new message to store in db
-        new_db_message = {
-            "user_message": data["user_message"],
-            "llm_response": llm_response["text"],
-            "message_dt": datetime.datetime.now(),
-            "message_number": int(chat_doc["message_count"]) + 1,
-            "search_string": updated_search_string  
-        }
-        
-        # Update the chat document: push new message, update message count and last use
-        mongo.db.chats.update_one(
-            {"_id": hash},
-            {
-                "$push": {"chat_history": new_db_message},
-                "$set": {
-                    "chat_last_use": datetime.datetime.now(),
-                    "message_count": int(chat_doc["message_count"]) + 1,
-                    "current_search_string": updated_search_string
-                }
-            }
-        )
-        
-        
+            updated_search_string = data["search_string"]
         
         #finalize finished return json
         return_request["llm_response"] = llm_response["text"]
-        return_request["user_message"] = data["user_message"]
         return_request["updated_search_string"] = updated_search_string
         return_request["ai_used"] = ai_used
         return_request["status"] = True
