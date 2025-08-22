@@ -258,6 +258,13 @@ def check_missing_or_blank_fields(data, request_required_fields):
     return False
 
 valid_ss_conversions = {"General":"4_generalformat.txt", "IEEE Xplore":"4_ieeeXploreformat.txt", "Google Scholar":"4_googlescholarformat.txt"}
+@app.route("/conversionformats", methods=['GET'])
+def get_conversionformats():
+    return_request = {
+        "formats": valid_ss_conversions.keys()
+    }
+    return return_request
+
 @app.route("/convertsearchstring", methods=['POST'])
 def convert():
     request_required_fields = ["search_string", "current_format", "conversion_format"]
