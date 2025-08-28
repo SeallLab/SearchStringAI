@@ -194,9 +194,7 @@ def prompt():
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
-        print()
-        print(full_prompt)
-        print()
+        
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -351,7 +349,6 @@ def convert():
         full_prompt = prompt.get_prompt_as_str()
         
         #calling LLM
-        print(full_prompt)
         llm_response = {}
         ai_used = ""
         try:
