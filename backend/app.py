@@ -133,7 +133,6 @@ def prompt():
         "user_message": "",
         "llm_response": "",
         "updated_search_string": ""
-        
     }
     status_code = 401
     try:
@@ -290,7 +289,8 @@ def convert():
         "ai_used": "",
         "user_message": "",
         "llm_response": "",
-        "updated_search_string": ""
+        "updated_search_string": "",
+        "current_format": "" 
     }
     
     status_code = 401
@@ -404,6 +404,7 @@ def convert():
         return_request["llm_response"] = llm_response["text"]
         return_request["user_message"] = user_message
         return_request["updated_search_string"] = updated_search_string
+        return_request["current_format"] = data["conversion_format"]
         return_request["ai_used"] = ai_used
         return_request["status"] = True
         status_code = 200

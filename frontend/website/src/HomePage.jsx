@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './HomePage.css'
+import { API_BASE, ENDPOINTS } from './apiConfig'
+
 
 function HomePage() {
-  const [chatHash, setChatHash] = useState('') // Renamed for clarity
+  const [chatHash, setChatHash] = useState('')
   const [serverMessage, setServerMessage] = useState('')
   const [error, setError] = useState(null)
   const navigate = useNavigate()
@@ -28,7 +30,7 @@ function HomePage() {
 
   const createNewChat = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/createchat', {
+      const response = await fetch(`${API_BASE}${ENDPOINTS.createChat}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +62,7 @@ function HomePage() {
 
   return (
     <>
-      <h1>Welcome to Search String AI!</h1>
+      <h1>Welcome to SLR Helper!</h1>
 
       <div>
         <input
@@ -86,18 +88,18 @@ function HomePage() {
       <div>
         <h4>About This Bot</h4>
         <p>
-          This AI bot is designed to help researchers in generating search strings for their systematic
-          literacture reviews!
-          Create a chat and start by sending your research question! 
-          After which you can provide feedback to further enhance the search string or ask questions to the bot reguarding 
-          the generated searchs string. Make sure you save the chat hash!
+          This AI bot is designed to help researchers in generating search strings and inclusion/exclusion criteria 
+          for their systematic literacture reviews!
+          Create a chat and start by sending your research question and/or research goal! 
+          After which, you can provide feedback and interact with the bot to further enhance its output! 
+          Make sure you save the chat hash!
         </p>
       </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <p className="read-the-docs">
-        Project by SE-ALL Labs @ University of Calgary
+        Project by SE-ALL Lab @ University of Calgary
       </p>
     </>
   )
