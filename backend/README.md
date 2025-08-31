@@ -45,7 +45,8 @@ MONGO_DATABASE="SEALLDB"
 ```
 
 Change the placeholder values to your actual keys, encryption key, and MongoDB credentials if different.
-
+You will need to aquire the AI API keys by yourself. You only really need one, either Gemini free tier key or the OPENAI key.
+Both are recommended.
 ---
 
 ## Setting Up the Conda Environment
