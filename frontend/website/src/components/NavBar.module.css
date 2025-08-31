@@ -1,0 +1,33 @@
+.navbar {
+  display: flex;
+  align-items: center;
+  background-color: #222;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+
+  width: 100%;          /* full container width */
+  margin: 0;            /* no margin */
+  /* Removed fixed positioning */
+  box-sizing: border-box;
+}
+
+
+.homeLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: white;
+}
+
+.logo {
+  height: 80px;          /* fixed height for consistent size */
+  width: auto;           /* keep aspect ratio */
+  margin-right: 0.75rem;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
