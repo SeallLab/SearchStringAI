@@ -469,6 +469,7 @@ def criteria():
         else:
             with open("helpers/llm/prompts/criteria/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
+            paper_context = f"Current inclusion/exclusion criteria:\n{current_criteria}\n\n"
 
     
         prompt = Prompt()

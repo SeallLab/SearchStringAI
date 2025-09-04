@@ -39,25 +39,6 @@ npx serve -s dist
 
 ---
 
-### Access on Your Network
-
-To access the site from another device (phone, tablet, etc.) on the same network:
-
-1. Find your local IP address:
-   ```bash
-   hostname -I
-   ```
-
-2. Visit the server in a browser on the other device:
-
-```
-http://<your-local-ip>:3000
-```
-
-> Replace `<your-local-ip>` with the actual IP address (e.g. `192.168.1.42`)
-
----
-
 ## Building the App (Optional)
 
 If you ever want to rebuild the app from source:

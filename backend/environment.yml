@@ -12,8 +12,6 @@ dependencies:
   - sqlite
   - tk
   - libffi
-  - ncurses
-  - readline
   - bzip2
   - xz
   - pip:

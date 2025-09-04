@@ -160,7 +160,7 @@ function ChatSearchString({ chatHash }) {
 
           <div className="format-display-row">
             <span className="search-string-format">
-              <strong>Current Format:</strong> {searchStringFormat || 'Unknown'}
+              <strong>Current Format:</strong> {searchStringFormat || 'General'}
             </span>
             <button
               className="formats-toggle-button"
