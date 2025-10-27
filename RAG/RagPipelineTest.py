@@ -1,37 +1,40 @@
 import os
 import pprint
 from dotenv import load_dotenv
-from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain_huggingface import HuggingFaceEmbeddings
+from pathlib import Path
+from pymongo import MongoClient
+
+# LangChain modules (1.x)
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.llms import GPT4All
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_community.vectorstores import MongoDBAtlasVectorSearch
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from pymongo import MongoClient
-from pathlib import Path
 
-# -------------------------------------------------------------------
-# 1. Load environment and connection
-# -------------------------------------------------------------------
+
+# -----------------------------
+# 1. Load environment & MongoDB URI
+# -----------------------------
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
+MONGODB_URI = os.getenv("MONGO_URI")
 if not MONGODB_URI:
-    raise ValueError("❌ MONGODB_URI not found in .env file")
+    raise ValueError("❌ MONGO_URI not found in .env file")
 
-DB_NAMESPACE = "langchain_db.document_rag"
+DB_NAMESPACE = "SLRMentor.document_rag"  # your database.collection
 
-# -------------------------------------------------------------------
-# 2. Initialize embedding model
-# -------------------------------------------------------------------
+# -----------------------------
+# 2. Load embedding model
+# -----------------------------
 print("🔹 Loading embedding model...")
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
-# -------------------------------------------------------------------
+# -----------------------------
 # 3. Connect to MongoDB Atlas vector store
-# -------------------------------------------------------------------
+# -----------------------------
 print("🔹 Connecting to MongoDB Atlas...")
 vector_store = MongoDBAtlasVectorSearch.from_connection_string(
     connection_string=MONGODB_URI,
@@ -40,9 +43,9 @@ vector_store = MongoDBAtlasVectorSearch.from_connection_string(
     index_name="vector_index"
 )
 
-# -------------------------------------------------------------------
-# 4. Load all PDFs in /documents and split
-# -------------------------------------------------------------------
+# -----------------------------
+# 4. Load PDFs and split into chunks
+# -----------------------------
 docs_folder = Path("documents")
 all_docs = []
 
@@ -58,9 +61,9 @@ for pdf_file in docs_folder.glob("*.pdf"):
 
 print(f"📄 Total chunks to process: {len(all_docs)}")
 
-# -------------------------------------------------------------------
-# 5. Only upload vectors if collection is empty
-# -------------------------------------------------------------------
+# -----------------------------
+# 5. Upload vectors only if collection empty
+# -----------------------------
 db_name, coll_name = DB_NAMESPACE.split(".")
 mongo_client = MongoClient(MONGODB_URI)
 collection = mongo_client[db_name][coll_name]
@@ -73,20 +76,20 @@ else:
     print("📥 Adding documents to MongoDB vector store...")
     vector_store.add_documents(all_docs)
     print("✅ Documents added successfully.")
-    vector_store.create_vector_search_index(dimensions=384)  # matches MiniLM
+    vector_store.create_vector_search_index(dimensions=384)  # MiniLM dimensions
     print("🧱 Vector search index created.")
 
-# -------------------------------------------------------------------
-# 6. Load local LLM (optional)
-# -------------------------------------------------------------------
+# -----------------------------
+# 6. Load local LLM
+# -----------------------------
 local_model_path = "./mistral-7b-openorca.gguf2.Q4_0.gguf"
-print(f"🤖 Loading local model from {local_model_path} (this may take a bit)...")
+print(f"🤖 Loading local model from {local_model_path}...")
 callbacks = [StreamingStdOutCallbackHandler()]
 llm = GPT4All(model=local_model_path, callbacks=callbacks, verbose=True, device="cpu")
 
-# -------------------------------------------------------------------
+# -----------------------------
 # 7. Create RAG chain
-# -------------------------------------------------------------------
+# -----------------------------
 retriever = vector_store.as_retriever()
 
 template = """
@@ -108,9 +111,9 @@ rag_chain = (
     | StrOutputParser()
 )
 
-# -------------------------------------------------------------------
+# -----------------------------
 # 8. Interactive question loop
-# -------------------------------------------------------------------
+# -----------------------------
 print("\n💬 Ready! Ask a question about the documents (type 'exit' to quit)\n")
 
 while True:
@@ -125,5 +128,5 @@ while True:
 
     documents = retriever.invoke(question)
     print("\n📚 Source documents:")
-    pprint.pprint(documents[:2])  # show a few sources
+    pprint.pprint(documents[:2])  # show first 2
     print("-" * 80)

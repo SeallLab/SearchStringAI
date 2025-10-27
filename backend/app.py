@@ -9,6 +9,8 @@ import helpers.scholarlyapi as sa #This is for querying and getting paper abstra
 import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
+from helpers.RAG.RAGutils import initialize_retriever, format_top_documents, get_relevant_documents_safe
+
 # from google.genai.types import HttpOptions
 
 
@@ -21,11 +23,13 @@ hash_byte_length = 16
 chat_hash_length = 8
 gemini_key = os.getenv('GEMINI_API_KEY')
 gpt_key = os.getenv('GPT_API_KEY')
+retriever = initialize_retriever(os.getenv("MONGO_URI")) #For RAG
 
 
 @app.route("/", methods=['GET'])
 def test():
     return "Server is live ;)"
+
 
 @app.route("/createchat", methods=['POST'])
 def create_chat():
@@ -66,8 +70,17 @@ def create_chat():
             "current_criteria": "",
         }
         
+        new_mentor_chat = {
+            "_id": hash,  
+            "chat_creation_date": datetime.datetime.now(),
+            "chat_last_use": datetime.datetime.now(),
+            "chat_history": [],
+            "message_count": 0,
+        }
+        
         mongo.db.search_string_chats.insert_one(new_search_string_chat)
         mongo.db.criteria_chats.insert_one(new_creteria_chat)
+        mongo.db.mentor_chats.insert_one(new_mentor_chat)
         
         #update return request with correct info
         return_request["hash"] = hash
@@ -105,6 +118,92 @@ def get_chat_history():
         #validate hash exists
         hash = data["hash_plain_text"]
         chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        
+        
+        #get chat
+        #print(chat_doc)
+        return_request["chat_history"] = chat_doc["chat_history"]
+        return_request["message_count"] = chat_doc["message_count"]
+        return_request["message"] = "Succesfully retireved messsage histoy"
+        return_request["status"] = True
+        status_code = 200
+        
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
+        return jsonify(return_request), status_code
+
+@app.route("/getcriteriachathistory", methods=['POST'])
+def get_criteria_chat_history():
+    
+    request_required_fields = ["hash_plain_text"]
+    return_request = {
+        "status": False,
+        "message": "",
+        "message_count": None,
+        "chat_history": [],
+        
+    } 
+    status_code = 401
+    try:
+        
+        #validate that all required fields are present in request
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
+            raise ValueError("request missing fields")
+
+        #validate hash exists
+        hash = data["hash_plain_text"]
+        chat_doc = mongo.db.criteria_chats.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        
+        
+        #get chat
+        #print(chat_doc)
+        return_request["chat_history"] = chat_doc["chat_history"]
+        return_request["message_count"] = chat_doc["message_count"]
+        return_request["message"] = "Succesfully retireved messsage histoy"
+        return_request["status"] = True
+        status_code = 200
+        
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
+        return jsonify(return_request), status_code
+    
+@app.route("/getmentorchathistory", methods=['POST'])
+def get_mentor_chat_history():
+    
+    request_required_fields = ["hash_plain_text"]
+    return_request = {
+        "status": False,
+        "message": "",
+        "message_count": None,
+        "chat_history": [],
+        
+    } 
+    status_code = 401
+    try:
+        
+        #validate that all required fields are present in request
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
+            raise ValueError("request missing fields")
+
+        #validate hash exists
+        hash = data["hash_plain_text"]
+        chat_doc = mongo.db.mentor_chats.find_one({"_id": hash})
         if not chat_doc:
             raise ValueError("Chat with given hash doesnt exsist")
         
@@ -534,46 +633,46 @@ def criteria():
         
     finally:
         return jsonify(return_request), status_code
-
-@app.route("/getcriteriachathistory", methods=['POST'])
-def get_criteria_chat_history():
     
-    request_required_fields = ["hash_plain_text"]
+@app.route("/ragquery", methods=["POST"])
+def rag_query():
+    request_required_fields = ["hash_plain_text", "user_message"]
     return_request = {
         "status": False,
         "message": "",
-        "message_count": None,
-        "chat_history": [],
-        
-    } 
+        "user_message": "",
+        "top_documents": []
+    }
     status_code = 401
     try:
-        
-        #validate that all required fields are present in request
         data = request.json
         if check_missing_or_blank_fields(data, request_required_fields):
-             
-            raise ValueError("request missing fields")
+            raise ValueError("Request missing required fields")
 
-        #validate hash exists
         hash = data["hash_plain_text"]
-        chat_doc = mongo.db.criteria_chats.find_one({"_id": hash})
+        user_message = data["user_message"]
+
+        # Validate hash exists
+        chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
         if not chat_doc:
-            raise ValueError("Chat with given hash doesnt exsist")
-        
-        
-        #get chat
-        #print(chat_doc)
-        return_request["chat_history"] = chat_doc["chat_history"]
-        return_request["message_count"] = chat_doc["message_count"]
-        return_request["message"] = "Succesfully retireved messsage histoy"
-        return_request["status"] = True
+            raise ValueError("Chat with given hash doesn't exist")
+
+        # Safely retrieve documents
+        top_docs = get_relevant_documents_safe(retriever, user_message)
+        formatted_docs = format_top_documents(top_docs, top_k=5)
+
+        return_request.update({
+            "status": True,
+            "message": "Successfully retrieved documents",
+            "user_message": user_message,
+            "top_documents": formatted_docs
+        })
         status_code = 200
-        
+
     except Exception as e:
         print(e)
-        status_code = 500
         return_request["message"] = str(e)
-        
+        status_code = 500
+
     finally:
         return jsonify(return_request), status_code
