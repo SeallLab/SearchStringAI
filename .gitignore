@@ -177,3 +177,5 @@ backend/tests.py
 backend/env
 
 validation/~$final_paper_selection.xlsx
+
+mistral-7b-openorca.gguf2.Q4_0.gguf
