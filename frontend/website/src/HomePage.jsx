@@ -98,9 +98,9 @@ function HomePage() {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      <p className="read-the-docs">
+      {/* <p className="read-the-docs">
         Project by SE-ALL Lab @ University of Calgary
-      </p>
+      </p> */}
     </>
   )
 }
