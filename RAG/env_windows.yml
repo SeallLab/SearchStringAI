@@ -1,4 +1,4 @@
-name: seallapprag
+name: seallapp
 channels:
   - defaults
   - https://repo.anaconda.com/pkgs/main
