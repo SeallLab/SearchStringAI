@@ -4,6 +4,7 @@ import NavBar from './components/NavBar' // adjust path if needed
 import ChatSearchString from './components/ChatSearchString'
 import ChatCriteria from './components/ChatCriteria'
 import './ChatPage.css'
+import ChatMentor from './components/ChatMentor'
 
 function ChatPage() {
   const { chatHash } = useParams()
@@ -32,11 +33,18 @@ function ChatPage() {
           >
             Criteria Chat
           </button>
+          <button
+            className={activeTab === 'mentor' ? 'active' : ''}
+            onClick={() => setActiveTab('mentor')}
+          >
+            Mentor Chat
+          </button>
         </div>
 
         <div className="tab-content">
           {activeTab === 'searchString' && <ChatSearchString chatHash={chatHash} />}
           {activeTab === 'criteria' && <ChatCriteria chatHash={chatHash} />}
+          {activeTab === 'mentor' && <ChatMentor chatHash={chatHash} />}
         </div>
       </div>
     </>
