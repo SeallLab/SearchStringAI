@@ -55,3 +55,28 @@ def format_docs(docs: list) -> list:
             texts.append(text)
 
     return texts
+
+def format_docs_prompt(docs: list, prescript: str = "", count: int = 0) -> list:
+    """
+    Extracts the text from a list of document dicts, removing embeddings.
+
+    Args:
+        docs (list of strs)
+        prescript (str): The prescript to use for formatting. A string that will be appended before each document text.
+        count (int): 1 if you want to include a number counter after the prescript. 0 if not.
+    Returns:
+        list of str: The text content of each document with prescript.
+    """
+    texts = []
+
+    for i in range(len(docs)):
+        if prescript == "":
+            return docs
+        else:
+            if count == 1:
+                prescript_text =  prescript + f" {i+1}\n" + ": "
+            else:
+                prescript_text = prescript + ": "
+        texts.append(prescript_text + docs[i])
+
+    return texts

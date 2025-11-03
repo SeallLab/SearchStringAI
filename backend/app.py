@@ -9,7 +9,7 @@ import helpers.scholarlyapi as sa #This is for querying and getting paper abstra
 import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
-from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, get_doc_texts, format_docs
+from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, format_docs, format_docs_prompt
 
 # from google.genai.types import HttpOptions
 
@@ -684,8 +684,9 @@ def mentor():
         "status": False,
         "message": "",
         "user_message": "",
-        "top_documents": []
-    }
+        "llm_response": "",
+        "ai_used": ""
+        }
     status_code = 401
     try:
         data = request.json
@@ -696,26 +697,107 @@ def mentor():
         user_message = data["user_message"]
 
         # Validate hash exists
-        chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
+        chat_doc = mongo.db.mentor_chats.find_one(
+            {"_id": hash},
+            {"chat_history": 0}
+        )
         if not chat_doc:
             raise ValueError("Chat with given hash doesn't exist")
+        
+        chat_doc = mongo.db.search_string_chats.find_one(
+            {"_id": hash},
+            {"chat_history": 0}
+        )
+        #validate hash exists
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        #getting the current latest search string and format
+        current_search_string = chat_doc.get("current_search_string", "")
+        
+        chat_doc = mongo.db.criteria_chats.find_one(
+            {"_id": hash},
+            {"chat_history": 0}
+        )
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
 
+        current_criteria = chat_doc.get("current_criteria", "") 
+        
+        
         # Safely retrieve documents
         top_docs = get_relevant_documents_safe(retriever, user_message)
         formatted_docs = format_docs(top_docs)
-        print(formatted_docs)
+        
+        rag_context_formated_docs = format_docs_prompt(formatted_docs, prescript="Contex", count=1)
+        print(rag_context_formated_docs)
+        
+        #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
+        paper_context = ""
+        base_prompt = ""
+        # Read all prompt components using UTF-8 to prevent decode issues
+        with open("helpers/llm/prompts/mentor/userInputPrompt.txt", "r", encoding="utf-8") as f:
+            user_input_prompt = f.read()
+
+        with open("helpers/llm/prompts/mentor/specificationFollowup.txt", "r", encoding="utf-8") as f:
+            end_specification = f.read()
         
 
+        user_input = f'User Input: {data["user_message"]} \n \n'
+        
+        with open("helpers/llm/prompts/mentor/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
+            base_prompt = f.read()
+            
+        paper_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = paper_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
+        
+        prompt = Prompt()
+        prompt.append_item(base_prompt)
+        prompt.append_item(paper_context)
+        prompt.append_item(user_input_prompt)
+        prompt.append_item(user_input)
+        prompt.append_item(end_specification)
+        full_prompt = prompt.get_prompt_as_str()
+        print(full_prompt)
+        
+        llm_response = {}
+        ai_used = ""
+        try:
+            llm_response = pu.call_gemini_mentor(gemini_key, full_prompt)
+            ai_used = "Gemini"
+
+        except Exception as e:
+            print(f"Gemini call failed, falling back to ChatGPT: {e}")
+            llm_response = pu.call_chatgpt_mentor(gpt_key, full_prompt)
+            ai_used = "chatGPT"
+            
+        #create new message to store in db
+        new_db_message = {
+            "user_message": data["user_message"],
+            "llm_response": llm_response["text"],
+            "message_dt": datetime.datetime.now(),
+            "message_number": int(chat_doc["message_count"]) + 1,
+        }
+        
+        # Update the chat document: push new message, update message count and last use
+        mongo.db.mentor_chats.update_one(
+            {"_id": hash},
+            {
+                "$push": {"chat_history": new_db_message},
+                "$set": {
+                    "chat_last_use": datetime.datetime.now(),
+                    "message_count": int(chat_doc["message_count"]) + 1,
+                }
+            }
+        )    
         
         
-        return_request.update({
-            "status": True,
-            "message": "Successfully retrieved documents",
-            "user_message": user_message,
-            "top_documents": formatted_docs
-        })
+        #finalize finished return json
+        return_request["llm_response"] = llm_response["text"]
+        return_request["user_message"] = data["user_message"]
+        return_request["ai_used"] = ai_used
+        return_request["status"] = True
         status_code = 200
-
+        #return the llm respnse to the user
     except Exception as e:
         print(e)
         return_request["message"] = str(e)

@@ -9,4 +9,7 @@ class ResponseCriteria(BaseModel):
     text: str
     updated_inclusion_exclusion_criteria: str
     has_chaged: bool
-    
+
+class ResponseMentor(BaseModel):
+    text: str
+    has_chaged: bool
