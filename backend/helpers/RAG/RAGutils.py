@@ -31,12 +31,27 @@ def get_relevant_documents_safe(retriever, query: str):
         raise AttributeError("Retriever does not have a known query method.")
 
 
-def format_top_documents(docs: list, top_k: int = 5) -> list:
+
+def format_docs(docs: list) -> list:
     """
-    Formats top documents returned by the retriever into dicts suitable for JSON responses.
+    Extracts the text from a list of document dicts, removing embeddings.
+
+    Args:
+        docs (list of dict or Document-like objects): Documents returned from the retriever.
+
+    Returns:
+        list of str: The text content of each document.
     """
-    formatted_docs = [
-        {"page_content": doc.page_content, "metadata": getattr(doc, "metadata", {})}
-        for doc in docs[:top_k]
-    ]
-    return formatted_docs
+    texts = []
+
+    for doc in docs:
+        # If doc is a dict from MongoDB
+        if isinstance(doc, dict):
+            text = doc.get("text") or doc.get("page_content")
+        else:
+            # If doc is a LangChain Document object
+            text = getattr(doc, "page_content", None) or getattr(doc, "text", None)
+        if text:
+            texts.append(text)
+
+    return texts

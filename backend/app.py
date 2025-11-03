@@ -9,7 +9,7 @@ import helpers.scholarlyapi as sa #This is for querying and getting paper abstra
 import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
-from helpers.RAG.RAGutils import initialize_retriever, format_top_documents, get_relevant_documents_safe
+from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, get_doc_texts, format_docs
 
 # from google.genai.types import HttpOptions
 
@@ -661,6 +661,53 @@ def rag_query():
         top_docs = get_relevant_documents_safe(retriever, user_message)
         formatted_docs = format_top_documents(top_docs, top_k=5)
 
+        return_request.update({
+            "status": True,
+            "message": "Successfully retrieved documents",
+            "user_message": user_message,
+            "top_documents": formatted_docs
+        })
+        status_code = 200
+
+    except Exception as e:
+        print(e)
+        return_request["message"] = str(e)
+        status_code = 500
+
+    finally:
+        return jsonify(return_request), status_code
+
+@app.route("/mentor", methods=["POST"])
+def mentor():
+    request_required_fields = ["hash_plain_text", "user_message"]
+    return_request = {
+        "status": False,
+        "message": "",
+        "user_message": "",
+        "top_documents": []
+    }
+    status_code = 401
+    try:
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+            raise ValueError("Request missing required fields")
+
+        hash = data["hash_plain_text"]
+        user_message = data["user_message"]
+
+        # Validate hash exists
+        chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesn't exist")
+
+        # Safely retrieve documents
+        top_docs = get_relevant_documents_safe(retriever, user_message)
+        formatted_docs = format_docs(top_docs)
+        print(formatted_docs)
+        
+
+        
+        
         return_request.update({
             "status": True,
             "message": "Successfully retrieved documents",
