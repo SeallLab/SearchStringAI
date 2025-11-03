@@ -7,7 +7,10 @@
     "conversion": "/convertsearchstring",
     "conversionFormats": "/conversionformats",
     "getCriteriaChatHistory": "/getcriteriachathistory",
-    "criteria": "/criteria"
+    "criteria": "/criteria",
+    "getMentorchathistory": "/getmentorchathistory",
+    "Mentor": "/mentor"
+
   }
 }
 
