@@ -13,11 +13,11 @@
 
 .chat-history {
   flex: 2;
-  border: 1px solid #ccc;
+  border: 1px solid #00000076;
   padding: 1rem;
   overflow-y: auto;
   margin-bottom: 1rem;
-  background-color: #000;
+  background-color: #00000076;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -186,4 +186,52 @@
 
 .copy-button:hover {
   background-color: #000;
+}
+
+.chatIDdisplay {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem; 
+  padding: 1rem;
+}
+
+.chatID-label {
+  color: grey;
+  font-weight: normal;
+}
+
+.chatID-value {
+  color: white;
+  font-weight: bold;
+}
+
+/* Tabs styling */
+.tabs-container {
+  display: flex;
+  justify-content: center; /* center tabs horizontally */
+  gap: 0.5rem; /* space between individual tabs/buttons */
+}
+
+.tab-button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #2d2d2d;
+  color: white;
+  transition: background-color 0.2s ease;
+}
+
+.tab-button:hover {
+  background-color: #444;
+}
+
+.tab-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.tab-content {
+  padding: 2rem;
 }
