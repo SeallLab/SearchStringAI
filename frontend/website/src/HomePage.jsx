@@ -85,7 +85,7 @@ function HomePage() {
     <>
       <section>
         <div className='introduction'>
-          <h1>Hi! I'm SLRmentor!</h1>
+          <h1>Hi! I'm SLRmentor! 👋</h1>
           <h4>About This Bot</h4>
           <p id='explination'>
             SLRmentor helps researchers in starting their systematic literacture.
