@@ -61,7 +61,7 @@ function ChatCriteria({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello! I am SLRmentor. You can ask me here about SLR inclusion/Exclusion Criteria. How can I help you today?',
+          message: 'Hello👋 I am SLRmentor. You can ask me here about SLR inclusion/Exclusion Criteria. How can I help you today?',
         });
       }
 

@@ -54,7 +54,7 @@ function ChatMentor({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello! I am SLRmentor. You can ask me here about systematic literacture reviews in general!. How can I help you today?',
+          message: 'Hello👋 I am SLRmentor. You can ask me here about systematic literacture reviews in general!. How can I help you today?',
         });
       }
 
