@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './NavBar.module.css';
 import SLRGuidePopup from './SLRGuidePopup';
+import WhatsASLRPopup from './WhatsASLRPopup';
 
 export default function NavBar() {
   const [showSLRGuide, setShowSLRGuide] = useState(false);
+  const [showWhatsASLR, setShowWhatsASLR] = useState(false);
 
   return (
     <>
@@ -15,7 +17,12 @@ export default function NavBar() {
         </Link>
 
         <div className={styles.navButtons}>
-          <button className={styles.navButton}>What's a SLR?</button>
+          <button
+            className={styles.navButton}
+            onClick={() => setShowWhatsASLR(true)}
+          >
+            What's a SLR?
+          </button>
           <button
             className={styles.navButton}
             onClick={() => setShowSLRGuide(true)}
@@ -27,6 +34,7 @@ export default function NavBar() {
       </nav>
 
       {showSLRGuide && <SLRGuidePopup onClose={() => setShowSLRGuide(false)} />}
+      {showWhatsASLR && <WhatsASLRPopup onClose={() => setShowWhatsASLR(false)} />}
     </>
   );
 }

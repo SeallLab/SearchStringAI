@@ -1,13 +1,12 @@
 .navbar {
   display: flex;
   align-items: center;
-  background-color: #222;
   padding: 0.75rem 1.5rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-  width: 100%;
-  margin: 0;
+  width: 100%;         
+  margin: 0;            
   box-sizing: border-box;
 }
+
 
 .homeLink {
   display: flex;
@@ -17,8 +16,8 @@
 }
 
 .logo {
-  height: 80px;
-  width: auto;
+  height: 80px;          
+  width: auto;           
   margin-right: 0.75rem;
   object-fit: contain;
   border-radius: 6px;
@@ -29,14 +28,14 @@
   font-weight: 600;
 }
 
-/* New container for nav buttons aligned to the right */
+
 .navButtons {
-  margin-left: auto; /* pushes buttons to the far right */
+  margin-left: auto; 
   display: flex;
-  gap: 0.75rem; /* spacing between buttons */
+  gap: 0.75rem; 
 }
 
-/* Styles for buttons */
+
 .navButton {
   padding: 0.5rem 1rem;
   font-size: 1rem;

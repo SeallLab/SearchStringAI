@@ -6,11 +6,11 @@
 }
 
 .message-block.user {
-  align-items: flex-end; /* user messages on right */
+  align-items: flex-end;
 }
 
 .message-block.ai {
-  align-items: flex-start; /* AI messages on left */
+  align-items: flex-start;
 }
 
 .message-sender {

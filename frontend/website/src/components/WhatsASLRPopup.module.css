@@ -5,39 +5,42 @@
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  z-index: 1000;
+
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 5vh 1rem;
-  box-sizing: border-box;
 }
 
 .popup {
-  position: relative;
-  background-color: #fff;
+  background: white;
   border-radius: 8px;
-  max-width: 60vw;
+  max-width: 70vw;
   width: 100%;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+  min-height: 90vh;
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
 }
 
-.guideImage {
-  display: block;
+.pdfViewer {
   width: 100%;
-  height: auto;
+  height: 90vh;
+  border: none;
+  border-radius: 8px;
 }
 
 .closeButton {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  font-size: 1.5rem;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  font-size: 2rem;
   background: transparent;
+  color: white;
   border: none;
   cursor: pointer;
-  color: #333;
-  z-index: 1;
+  z-index: 1001;
 }
