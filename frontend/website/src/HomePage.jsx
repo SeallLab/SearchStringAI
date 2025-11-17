@@ -62,8 +62,20 @@ function HomePage() {
 
   return (
     <>
-      <h1>Welcome to SLR Helper!</h1>
+      <div className='introduction'>
+        <h1>Hi! I'm SLRmentor!</h1>
+        
+        <h4>About This Bot</h4>
+        <p id='explination'>
+          SLRmentor helps researchers in starting their systematic literacture.
+          I'll help you in generating search strings, inclusion/exclusion criteria, or
+          simply answer any questions you might have about SLR's! 
+          Start out by simply creating a new chat!
 
+        </p>
+
+      </div>
+      
       <div>
         <input
           type="text"
@@ -76,7 +88,7 @@ function HomePage() {
         </p>
       </div>
 
-      <div className="card">
+      <div className="buttons">
         <button onClick={goToChatPage}> 
           Enter
         </button>
@@ -84,16 +96,6 @@ function HomePage() {
         <button onClick={createNewChat}>
           Create New Chat
         </button>
-      </div>
-      <div>
-        <h4>About This Bot</h4>
-        <p>
-          This AI bot is designed to help researchers in generating search strings and inclusion/exclusion criteria 
-          for their systematic literacture reviews!
-          Create a chat and start by sending your research question and/or research goal! 
-          After which, you can provide feedback and interact with the bot to further enhance its output! 
-          Make sure you save the chat hash!
-        </p>
       </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
