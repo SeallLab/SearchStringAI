@@ -65,7 +65,7 @@ function ChatSearchString({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello👋 I am SLRmentor. You can ask me here about SLR search strings. How can I help you today?',
+          message: 'Hello👋 I am SLRmentor. Give me your study goal and I will help you create your search string!',
         });
       }
 
@@ -173,7 +173,7 @@ function ChatSearchString({ chatHash }) {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Give me your study goal and I will help you create your search string!"
           className="chat-input"
           disabled={loadingConversion}
         />

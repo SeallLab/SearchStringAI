@@ -61,7 +61,7 @@ function ChatCriteria({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello👋 I am SLRmentor. You can ask me here about SLR inclusion/Exclusion Criteria. How can I help you today?',
+          message: 'Hello👋 I am SLRmentor. Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!',
         });
       }
 
@@ -142,7 +142,7 @@ function ChatCriteria({ chatHash }) {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!"
           className="chat-input"
         />
         <button onClick={sendMessage} className="send-button">

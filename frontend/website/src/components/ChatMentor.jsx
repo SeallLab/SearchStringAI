@@ -114,7 +114,7 @@ function ChatMentor({ chatHash }) {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Ask SLRmentor something about... SLRs!"
           className="chat-input"
         />
         <button onClick={sendMessage} className="send-button">Send</button>
