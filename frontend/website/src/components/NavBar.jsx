@@ -1,14 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import styles from './NavBar.module.css'; // CSS module import
+import styles from './NavBar.module.css';
+import SLRGuidePopup from './SLRGuidePopup';
+import WhatsASLRPopup from './WhatsASLRPopup';
 
 export default function NavBar() {
+  const [showSLRGuide, setShowSLRGuide] = useState(false);
+  const [showWhatsASLR, setShowWhatsASLR] = useState(false);
+
   return (
-    <nav className={styles.navbar}>
-      <Link to="/" className={styles.homeLink}>
-        {/* <img src="/SEAL.avif" alt="SLR Helper Logo" className={styles.logo} /> */}
-        <span className={styles.title}>SLR Helper</span>
-      </Link>
-    </nav>
+    <>
+      <nav className={styles.navbar}>
+        <Link to="/" className={styles.homeLink}>
+          <img src="/bita_recolor.png" alt="SLRmentor Logo" className={styles.logo} />
+          <span className={styles.title}>SLRmentor</span>
+        </Link>
+
+        <div className={styles.navButtons}>
+          <button
+            className={styles.navButton}
+            onClick={() => setShowWhatsASLR(true)}
+          >
+            What's a SLR?
+          </button>
+          <button
+            className={styles.navButton}
+            onClick={() => setShowSLRGuide(true)}
+          >
+            SLR Guide
+          </button>
+          <button className={styles.navButton}>How to Use SLRmentor</button>
+        </div>
+      </nav>
+
+      {showSLRGuide && <SLRGuidePopup onClose={() => setShowSLRGuide(false)} />}
+      {showWhatsASLR && <WhatsASLRPopup onClose={() => setShowWhatsASLR(false)} />}
+    </>
   );
 }

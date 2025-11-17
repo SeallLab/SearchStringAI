@@ -1,0 +1,36 @@
+.message-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 100%;
+}
+
+.message-block.user {
+  align-items: flex-end;
+}
+
+.message-block.ai {
+  align-items: flex-start;
+}
+
+.message-sender {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+
+.message {
+  padding: 0.5rem 1rem;
+  border-radius: 15px;
+  word-wrap: break-word;
+  max-width: 75%;
+}
+
+.message.user {
+  text-align: right;
+}
+
+.message.ai {
+  text-align: left;
+}

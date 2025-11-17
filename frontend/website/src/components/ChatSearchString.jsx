@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react'
-import '../ChatPage.css'
-import { API_BASE, ENDPOINTS } from '../apiConfig'
+import { useState, useEffect } from 'react';
+import Message from './Message';
+import '../ChatPage.css';
+import { API_BASE, ENDPOINTS } from '../apiConfig';
 
 function ChatSearchString({ chatHash }) {
-  const [messages, setMessages] = useState([])
-  const [newMessage, setNewMessage] = useState('')
-  const [searchString, setSearchString] = useState('')
-  const [searchStringFormat, setSearchStringFormat] = useState('')
-  const [searchStringExists, setSearchStringExists] = useState(false)
-  const [error, setError] = useState(null)
-
-  const [availableFormats, setAvailableFormats] = useState([])
-  const [showFormatsDropdown, setShowFormatsDropdown] = useState(false)
-  const [loadingConversion, setLoadingConversion] = useState(false)
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchString, setSearchString] = useState('');
+  const [searchStringFormat, setSearchStringFormat] = useState('');
+  const [availableFormats, setAvailableFormats] = useState([]);
+  const [showFormatsDropdown, setShowFormatsDropdown] = useState(false);
+  const [loadingConversion, setLoadingConversion] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch chat history
   useEffect(() => {
@@ -22,127 +21,109 @@ function ChatSearchString({ chatHash }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ hash_plain_text: chatHash }),
-        })
-
-        const data = await response.json()
-        return data
+        });
+        const data = await response.json();
+        return data;
       } catch (err) {
-        console.error('Error:', err)
-        setError('An error occurred while getting chat.')
-        return null
+        console.error('Error:', err);
+        setError('An error occurred while getting chat.');
+        return null;
       }
-    }
+    };
 
     const populateChatHistory = async () => {
-      const data = await getChat()
+      const data = await getChat();
+      const formattedMessages = [];
+
       if (data?.status && Array.isArray(data.chat_history)) {
-        const formattedMessages = []
         data.chat_history.forEach((entry) => {
-          formattedMessages.push({ sender: 'user', text: entry.user_message })
-          formattedMessages.push({ sender: 'ai', text: entry.llm_response })
-        })
-        setMessages(formattedMessages)
-        if (data.message_count > 0) {
-          const latestEntry = data.chat_history[data.message_count - 1]
-          setSearchString(latestEntry.search_string || '')
-          setSearchStringFormat(latestEntry.search_string_format || '')
-        }
+          if (entry.user_message?.trim()) {
+            formattedMessages.push({
+              sender: 'user',
+              title: 'You',
+              message: entry.user_message,
+            });
+          }
+
+          if (entry.llm_response?.trim()) {
+            formattedMessages.push({
+              sender: 'ai',
+              title: 'SLRmentor',
+              message: entry.llm_response,
+            });
+          }
+        });
+
+        // Set search string from last chat entry if present
+        const lastEntry = data.chat_history[data.chat_history.length - 1];
+        if (lastEntry?.search_string) setSearchString(lastEntry.search_string);
+        if (lastEntry?.search_string_format) setSearchStringFormat(lastEntry.search_string_format);
       }
-    }
 
-    if (chatHash) populateChatHistory()
-  }, [chatHash])
+      // If chat history is empty, add AI greeting
+      if (formattedMessages.length === 0) {
+        formattedMessages.push({
+          sender: 'ai',
+          title: 'SLRmentor',
+          message: 'Hello👋 I am SLRmentor. Give me your study goal and I will help you create your search string!',
+        });
+      }
 
-  // Fetch available formats on mount
+      setMessages(formattedMessages);
+    };
+
+    if (chatHash) populateChatHistory();
+  }, [chatHash]);
+
+  // Fetch available formats
   useEffect(() => {
     const fetchFormats = async () => {
       try {
-        const res = await fetch(`${API_BASE}${ENDPOINTS.conversionFormats}`)
-        const data = await res.json()
-        if (Array.isArray(data.formats)) {
-          setAvailableFormats(data.formats)
-        }
+        const res = await fetch(`${API_BASE}${ENDPOINTS.conversionFormats}`);
+        const data = await res.json();
+        if (Array.isArray(data.formats)) setAvailableFormats(data.formats);
       } catch (err) {
-        console.error('Error fetching formats:', err)
+        console.error('Error fetching formats:', err);
       }
-    }
-
-    fetchFormats()
-  }, [])
-
-  useEffect(() => {
-    setSearchStringExists(searchString.trim() !== '')
-  }, [searchString])
+    };
+    fetchFormats();
+  }, []);
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim()) return;
 
-    setMessages((prev) => [...prev, { sender: 'user', text: newMessage }])
+    setMessages((prev) => [
+      ...prev,
+      { sender: 'user', title: 'You', message: newMessage },
+    ]);
 
     try {
       const response = await fetch(`${API_BASE}${ENDPOINTS.prompt}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hash_plain_text: chatHash, user_message: newMessage }),
-      })
+      });
+      const data = await response.json();
 
-      const data = await response.json()
-
-      if (data.status === true) {
-        setMessages((prev) => [...prev, { sender: 'ai', text: data.llm_response }])
-        setSearchString(data.updated_search_string || '')
-        setSearchStringFormat(data.search_string_format || '')
-      } else {
-        setMessages((prev) => [...prev, { sender: 'ai', text: "AI couldn't respond." }])
-      }
-    } catch (err) {
-      console.error(err)
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Error sending message.' }])
-    }
-
-    setNewMessage('')
-  }
-
-  const handleFormatClick = async (format) => {
-    if (loadingConversion) return // avoid double-clicks
-    if (format === searchStringFormat) {
-      return
-    }
-    setLoadingConversion(true)
-
-    try {
-      const response = await fetch(`${API_BASE}${ENDPOINTS.conversion}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hash_plain_text: chatHash,
-          conversion_format: format,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.status === true) {
-        // Append user message & AI response to chat
+      // Only add AI response if non-empty
+      if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
-          { sender: 'user', text: data.user_message || `Convert to ${format}` },
-          { sender: 'ai', text: data.llm_response || 'Conversion response' },
-        ])
-
-        setSearchString(data.updated_search_string || searchString)
-        setSearchStringFormat(data.current_format || format)
-      } else {
-        // Conversion failed, no update to chat or strings
-        console.warn('Conversion failed:', data.message)
+          { sender: 'ai', title: 'SLRmentor', message: data.llm_response },
+        ]);
+        setSearchString(data.updated_search_string || '');
+        setSearchStringFormat(data.search_string_format || '');
       }
     } catch (err) {
-      console.error('Error during conversion:', err)
-    } finally {
-      setLoadingConversion(false)
-      setShowFormatsDropdown(false) // close dropdown after selection
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.' },
+      ]);
     }
-  }
+
+    setNewMessage('');
+  };
 
   return (
     <div className="chat-container">
@@ -150,14 +131,13 @@ function ChatSearchString({ chatHash }) {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.sender}`}>{msg.text}</div>
+          <Message key={i} sender={msg.sender} title={msg.title} message={msg.message} />
         ))}
       </div>
 
-      {searchStringExists && (
+      {searchString && (
         <div className="search-string-div">
           <pre className="search-string">{searchString}</pre>
-
           <div className="format-display-row">
             <span className="search-string-format">
               <strong>Current Format:</strong> {searchStringFormat || 'General'}
@@ -175,25 +155,14 @@ function ChatSearchString({ chatHash }) {
           {showFormatsDropdown && (
             <ul className="formats-dropdown">
               {availableFormats
-                .filter((format) => format !== searchStringFormat) // exclude current format
+                .filter((format) => format !== searchStringFormat)
                 .map((format, idx) => (
-                  <li
-                    key={idx}
-                    onClick={() => handleFormatClick(format)}
-                    style={{ cursor: loadingConversion ? 'not-allowed' : 'pointer', opacity: loadingConversion ? 0.5 : 1 }}
-                    className="format-option"
-                  >
-                    {format}
-                  </li>
+                  <li key={idx}>{format}</li>
                 ))}
             </ul>
           )}
 
-
-          <button
-            className="copy-button"
-            onClick={() => navigator.clipboard.writeText(searchString)}
-          >
+          <button className="copy-button" onClick={() => navigator.clipboard.writeText(searchString)}>
             Copy Search String
           </button>
         </div>
@@ -204,7 +173,7 @@ function ChatSearchString({ chatHash }) {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Give me your study goal and I will help you create your search string!"
           className="chat-input"
           disabled={loadingConversion}
         />
@@ -215,7 +184,7 @@ function ChatSearchString({ chatHash }) {
 
       {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
     </div>
-  )
+  );
 }
 
-export default ChatSearchString
+export default ChatSearchString;

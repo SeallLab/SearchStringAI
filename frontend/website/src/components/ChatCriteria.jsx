@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react'
-import '../ChatPage.css'
-import { API_BASE, ENDPOINTS } from '../apiConfig'
+import { useState, useEffect } from 'react';
+import Message from './Message';
+import '../ChatPage.css';
+import { API_BASE, ENDPOINTS } from '../apiConfig';
 
 function ChatCriteria({ chatHash }) {
-  const [messages, setMessages] = useState([])
-  const [newMessage, setNewMessage] = useState('')
-  const [criteria, setCriteria] = useState('')
-  const [criteriaExists, setCriteriaExists] = useState(false)
-  const [error, setError] = useState(null)
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [criteria, setCriteria] = useState('');
+  const [criteriaExists, setCriteriaExists] = useState(false);
+  const [error, setError] = useState(null);
 
+  // Fetch chat history
   useEffect(() => {
     const getChat = async () => {
       try {
@@ -16,70 +18,97 @@ function ChatCriteria({ chatHash }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ hash_plain_text: chatHash }),
-        })
-
-        const data = await response.json()
-        return data
+        });
+        const data = await response.json();
+        return data;
       } catch (err) {
-        console.error('Error:', err)
-        setError('An error occurred while getting criteria chat.')
-        return null
+        console.error('Error:', err);
+        setError('An error occurred while getting criteria chat.');
+        return null;
       }
-    }
+    };
 
     const populateChatHistory = async () => {
-      const data = await getChat()
+      const data = await getChat();
+      const formattedMessages = [];
+
       if (data?.status && Array.isArray(data.chat_history)) {
-        const formattedMessages = []
         data.chat_history.forEach((entry) => {
-          formattedMessages.push({ sender: 'user', text: entry.user_message })
-          formattedMessages.push({ sender: 'ai', text: entry.llm_response })
-        })
-        setMessages(formattedMessages)
+          if (entry.user_message?.trim()) {
+            formattedMessages.push({
+              sender: 'user',
+              title: 'You',
+              message: entry.user_message,
+            });
+          }
 
-        if (data.message_count > 0) {
-          setCriteria(data.chat_history[data.message_count - 1].criteria)
-        }
+          if (entry.llm_response?.trim()) {
+            formattedMessages.push({
+              sender: 'ai',
+              title: 'SLRmentor',
+              message: entry.llm_response,
+            });
+          }
+        });
+
+        // Set criteria from last entry if present
+        const lastEntry = data.chat_history[data.chat_history.length - 1];
+        if (lastEntry?.criteria) setCriteria(lastEntry.criteria);
       }
-    }
 
-    if (chatHash) populateChatHistory()
-  }, [chatHash])
+      // If chat history is empty, add AI greeting
+      if (formattedMessages.length === 0) {
+        formattedMessages.push({
+          sender: 'ai',
+          title: 'SLRmentor',
+          message: 'Hello👋 I am SLRmentor. Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!',
+        });
+      }
+
+      setMessages(formattedMessages);
+    };
+
+    if (chatHash) populateChatHistory();
+  }, [chatHash]);
 
   useEffect(() => {
-    setCriteriaExists(criteria.trim() !== '')
-  }, [criteria])
+    setCriteriaExists(criteria.trim() !== '');
+  }, [criteria]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim()) return;
 
-    setMessages((prev) => [...prev, { sender: 'user', text: newMessage }])
+    setMessages((prev) => [
+      ...prev,
+      { sender: 'user', title: 'You', message: newMessage },
+    ]);
 
     try {
       const response = await fetch(`${API_BASE}${ENDPOINTS.criteria}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hash_plain_text: chatHash,
-          user_message: newMessage,
-        }),
-      })
+        body: JSON.stringify({ hash_plain_text: chatHash, user_message: newMessage }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
-      if (data.status === true) {
-        setMessages((prev) => [...prev, { sender: 'ai', text: data.llm_response }])
-        setCriteria(data.updated_criteria)
-      } else {
-        setMessages((prev) => [...prev, { sender: 'ai', text: "AI couldn't respond." }])
+      if (data.status === true && data.llm_response?.trim()) {
+        setMessages((prev) => [
+          ...prev,
+          { sender: 'ai', title: 'SLRmentor', message: data.llm_response },
+        ]);
+        setCriteria(data.updated_criteria || '');
       }
     } catch (err) {
-      console.error(err)
-      setMessages((prev) => [...prev, { sender: 'ai', text: 'Error sending message.' }])
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.' },
+      ]);
     }
 
-    setNewMessage('')
-  }
+    setNewMessage('');
+  };
 
   return (
     <div className="chat-container">
@@ -87,7 +116,7 @@ function ChatCriteria({ chatHash }) {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <div key={i} className={`message ${msg.sender}`}>{msg.text}</div>
+          <Message key={i} sender={msg.sender} title={msg.title} message={msg.message} />
         ))}
       </div>
 
@@ -113,15 +142,17 @@ function ChatCriteria({ chatHash }) {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!"
           className="chat-input"
         />
-        <button onClick={sendMessage} className="send-button">Send</button>
+        <button onClick={sendMessage} className="send-button">
+          Send
+        </button>
       </div>
 
       {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
     </div>
-  )
+  );
 }
 
-export default ChatCriteria
+export default ChatCriteria;
