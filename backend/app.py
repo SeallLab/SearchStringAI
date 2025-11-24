@@ -4,12 +4,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 import os, json, datetime
-from helpers.xploreapi.xploreapi import XPLORE #for thee IEEE xPlore API
 import helpers.scholarlyapi as sa #This is for querying and getting paper abstracts
 import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
-from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, format_docs, format_docs_prompt
+from helpers.RAG.RetrieverManager import RetrieverManager
 from helpers.db.mongodbhelpers import MongoHelper
 
 # from google.genai.types import HttpOptions
@@ -28,7 +27,12 @@ message_history_limit = 30
 RAG_doc_limit = 10
 gemini_key = os.getenv('GEMINI_API_KEY')
 gpt_key = os.getenv('GPT_API_KEY')
-retriever = initialize_retriever(mongo_uri=os.getenv("MONGO_URI"), top_k=RAG_doc_limit) #For RAG
+rm = RetrieverManager(
+    mongo_uri=os.getenv("MONGO_URI"),
+    namespace="SLRMentor.document_rag",
+    index_name="vector_index",
+    top_k=RAG_doc_limit
+)
 
 
 @app.route("/", methods=['GET'])
@@ -261,6 +265,10 @@ def prompt():
         current_search_string = chat_doc.get("current_search_string", "")
         current_search_string_format = chat_doc.get("current_search_string_format", "")
         
+        #RAG
+        top_docs = rm.get_relevant_documents_safe(data["user_message"])
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
@@ -299,6 +307,8 @@ def prompt():
 
         chat_history_str = mh.get_chat_history_as_string("search_string_chats", message_history_limit, hash)
         chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + paper_context
         
         prompt = Prompt()
         prompt.append_item(base_prompt)
@@ -554,6 +564,11 @@ def criteria():
 
         current_criteria = chat_doc.get("current_criteria", "")        
         
+        #RAG
+        top_docs = rm.get_relevant_documents_safe(data["user_message"])
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
+        
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
         base_prompt = ""
@@ -577,7 +592,9 @@ def criteria():
 
         chat_history_str = mh.get_chat_history_as_string("criteria_chats", message_history_limit, hash)
         chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
-    
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + paper_context
+        
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
@@ -661,14 +678,14 @@ def rag_query():
         user_message = data["user_message"]
 
         # Safely retrieve documents
-        top_docs = get_relevant_documents_safe(retriever, user_message)
-        formatted_docs = format_docs(top_docs)
+        top_docs = rm.get_relevant_documents_safe(user_message)
+        formatted_docs_plaintext = rm.format_docs(top_docs)
 
         return_request.update({
             "status": True,
             "message": "Successfully retrieved documents",
             "user_message": user_message,
-            "top_documents": formatted_docs
+            "top_documents": formatted_docs_plaintext
         })
         status_code = 200
 
@@ -728,11 +745,9 @@ def mentor():
         
         
         # Safely retrieve documents
-        top_docs = get_relevant_documents_safe(retriever, user_message)
-        formatted_docs = format_docs(top_docs)
-        
-        rag_context_formated_docs = format_docs_prompt(formatted_docs, prescript="Contex", count=1)
-        print(rag_context_formated_docs)
+        top_docs = rm.get_relevant_documents_safe(user_message)
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
@@ -750,8 +765,8 @@ def mentor():
         with open("helpers/llm/prompts/mentor/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
             base_prompt = f.read()
             
-        paper_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
-        paper_context = paper_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
         chat_history_str = mh.get_chat_history_as_string("mentor_chats", message_history_limit, hash)
         chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
         
