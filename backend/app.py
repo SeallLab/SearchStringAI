@@ -4,12 +4,12 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 import os, json, datetime
-from helpers.xploreapi.xploreapi import XPLORE #for thee IEEE xPlore API
 import helpers.scholarlyapi as sa #This is for querying and getting paper abstracts
 import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
-from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, format_docs, format_docs_prompt
+from helpers.RAG.RetrieverManager import RetrieverManager
+from helpers.db.mongodbhelpers import MongoHelper
 
 # from google.genai.types import HttpOptions
 
@@ -18,12 +18,21 @@ from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_sa
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 mongo = PyMongo(app)
+mh = MongoHelper(mongo)
 CORS(app)
+
 hash_byte_length = 16
 chat_hash_length = 8
+message_history_limit = 30
+RAG_doc_limit = 30
 gemini_key = os.getenv('GEMINI_API_KEY')
 gpt_key = os.getenv('GPT_API_KEY')
-retriever = initialize_retriever(os.getenv("MONGO_URI")) #For RAG
+rm = RetrieverManager(
+    mongo_uri=os.getenv("MONGO_URI"),
+    namespace="SLRMentor.document_rag",
+    index_name="vector_index",
+    top_k=RAG_doc_limit
+)
 
 
 @app.route("/", methods=['GET'])
@@ -78,9 +87,17 @@ def create_chat():
             "message_count": 0,
         }
         
+        new_system_context = {
+            "_id": hash,  
+            "chat_creation_date": datetime.datetime.now(),
+            "chat_last_use": datetime.datetime.now(),
+            "system_context": "",
+        }
+        
         mongo.db.search_string_chats.insert_one(new_search_string_chat)
         mongo.db.criteria_chats.insert_one(new_creteria_chat)
         mongo.db.mentor_chats.insert_one(new_mentor_chat)
+        mongo.db.system_context.insert_one(new_system_context)
         
         #update return request with correct info
         return_request["hash"] = hash
@@ -94,7 +111,46 @@ def create_chat():
         
     finally:
         return jsonify(return_request), status_code
+
+@app.route("/getsystemcontext", methods=['POST'])
+def get_system_context():
     
+    request_required_fields = ["hash_plain_text"]
+    return_request = {
+        "status": False,
+        "message": "",
+        "system_context": ""
+        
+    } 
+    status_code = 401
+    try:
+        
+        #validate that all required fields are present in request
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
+            raise ValueError("request missing fields")
+
+        #validate hash exists
+        hash = data["hash_plain_text"]
+        chat_doc = mongo.db.system_context.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        
+        
+        return_request["system_context"] = chat_doc["system_context"]
+        return_request["message"] = "Succesfully retireved messsage histoy"
+        return_request["status"] = True
+        status_code = 200
+        
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
+        return jsonify(return_request), status_code
+        
 @app.route("/getchathistory", methods=['POST'])
 def get_chat_history():
     
@@ -223,7 +279,51 @@ def get_mentor_chat_history():
         
     finally:
         return jsonify(return_request), status_code
+
+@app.route("/setsystemcontext", methods=['POST'])
+def set_system_context():
     
+    request_required_fields = ["hash_plain_text", "system_context"]
+    return_request = {
+        "status": False
+    }
+    status_code = 401
+    try:
+        
+        #validate that all required fields are present in request
+        data = request.json
+        if check_missing_or_blank_fields(data, request_required_fields):
+             
+            raise ValueError("request missing fields")
+
+        #validate hash exists
+        hash = data["hash_plain_text"]
+        chat_doc = mongo.db.system_context.find_one({"_id": hash})
+        if not chat_doc:
+            raise ValueError("Chat with given hash doesnt exsist")
+        # Update the system context
+        mongo.db.system_context.update_one(
+            {"_id": hash},
+            {
+                "$set": {
+                    "system_context": data["system_context"],
+                    "chat_last_use": datetime.datetime.now(),
+                }
+            }
+        )
+        
+        #finalize finished return json
+        return_request["status"] = True
+        status_code = 200
+        #return the llm respnse to the user
+    except Exception as e:
+        print(e)
+        status_code = 500
+        return_request["message"] = str(e)
+        
+    finally:
+        return jsonify(return_request), status_code
+        
 @app.route("/prompt", methods=['POST'])
 def prompt():
     
@@ -255,30 +355,38 @@ def prompt():
 
         current_search_string = chat_doc.get("current_search_string", "")
         current_search_string_format = chat_doc.get("current_search_string_format", "")
-        
+        #system context retrieval
+        chat_doc2 = mongo.db.system_context.find_one({"_id": hash})
+        if not chat_doc2:
+            raise ValueError("Chat with given hash doesnt exsist")
+        sys_context = chat_doc2.get("system_context", "")
+        #RAG
+        top_docs = rm.get_relevant_documents_safe(data["user_message"])
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
         base_prompt = ""
         # Read all prompt components using UTF-8 to prevent decode issues
-        with open("helpers/llm/prompts/identifyingKeyWordsPrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/identifyingKeyWordsPrompt.txt", "r", encoding="utf-8") as f:
             identify_kw_prompt = f.read()
 
-        with open("helpers/llm/prompts/userInputPrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/userInputPrompt.txt", "r", encoding="utf-8") as f:
             user_input_prompt = f.read()
 
-        with open("helpers/llm/prompts/specificationFollowup.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/specificationFollowup.txt", "r", encoding="utf-8") as f:
             end_specification = f.read()
         
 
         user_input = f'User Input: {data["user_message"]} \n \n'
         if current_search_string.strip() == "":
-            with open("helpers/llm/prompts/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
+            with open("helpers/llm/prompts/searchstrings/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
             paper_context = ""
             current_search_string_format = "General"
         else:
-            with open("helpers/llm/prompts/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
+            with open("helpers/llm/prompts/searchstrings/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
 
             paper_context = f'Current search string: {current_search_string} \n \n'
@@ -292,20 +400,23 @@ def prompt():
             if isinstance(abstracts, str): #if there was no error getting the abstracts
                 paper_context = paper_context + f'\n \nHere is the tittles and abstracts returned by the current search string for context: \n' + abstracts 
 
-            
-
-        
-        
+        chat_history_str = mh.get_chat_history_as_string("search_string_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + paper_context
+        paper_context = f' Users SLR Context: {sys_context} \n\n' + paper_context
         
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(identify_kw_prompt)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
         
+        print(full_prompt)
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -549,6 +660,15 @@ def criteria():
 
         current_criteria = chat_doc.get("current_criteria", "")        
         
+        chat_doc2 = mongo.db.system_context.find_one({"_id": hash})
+        if not chat_doc2:
+            raise ValueError("Chat with given hash doesnt exsist")
+        sys_context = chat_doc2.get("system_context", "")
+        #RAG
+        top_docs = rm.get_relevant_documents_safe(data["user_message"])
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
+        
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
         base_prompt = ""
@@ -570,14 +690,20 @@ def criteria():
                 base_prompt = f.read()
             paper_context = f"Current inclusion/exclusion criteria:\n{current_criteria}\n\n"
 
-    
+        chat_history_str = mh.get_chat_history_as_string("criteria_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + paper_context
+        paper_context = f' Users SLR Context: {sys_context} \n\n' + paper_context
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
+        print(full_prompt)
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -636,7 +762,7 @@ def criteria():
     
 @app.route("/ragquery", methods=["POST"])
 def rag_query():
-    request_required_fields = ["hash_plain_text", "user_message"]
+    request_required_fields = ["user_message"]
     return_request = {
         "status": False,
         "message": "",
@@ -649,23 +775,17 @@ def rag_query():
         if check_missing_or_blank_fields(data, request_required_fields):
             raise ValueError("Request missing required fields")
 
-        hash = data["hash_plain_text"]
         user_message = data["user_message"]
 
-        # Validate hash exists
-        chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
-        if not chat_doc:
-            raise ValueError("Chat with given hash doesn't exist")
-
         # Safely retrieve documents
-        top_docs = get_relevant_documents_safe(retriever, user_message)
-        formatted_docs = format_top_documents(top_docs, top_k=5)
+        top_docs = rm.get_relevant_documents_safe(user_message)
+        formatted_docs_plaintext = rm.format_docs(top_docs)
 
         return_request.update({
             "status": True,
             "message": "Successfully retrieved documents",
             "user_message": user_message,
-            "top_documents": formatted_docs
+            "top_documents": formatted_docs_plaintext
         })
         status_code = 200
 
@@ -723,13 +843,15 @@ def mentor():
 
         current_criteria = chat_doc.get("current_criteria", "") 
         
+        chat_doc2 = mongo.db.system_context.find_one({"_id": hash})
+        if not chat_doc2:
+            raise ValueError("Chat with given hash doesnt exsist")
+        sys_context = chat_doc2.get("system_context", "")
         
         # Safely retrieve documents
-        top_docs = get_relevant_documents_safe(retriever, user_message)
-        formatted_docs = format_docs(top_docs)
-        
-        rag_context_formated_docs = format_docs_prompt(formatted_docs, prescript="Contex", count=1)
-        print(rag_context_formated_docs)
+        top_docs = rm.get_relevant_documents_safe(user_message)
+        formatted_docs = rm.format_docs(top_docs)
+        rag_context_formated_docs = rm.format_docs_prompt(formatted_docs, prescript="Contex", count=1)
         
         #Flow chart the type of prompt, is this the research question or a followup?(check db current search string field)
         paper_context = ""
@@ -747,13 +869,17 @@ def mentor():
         with open("helpers/llm/prompts/mentor/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
             base_prompt = f.read()
             
-        paper_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
-        paper_context = paper_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
+        rag_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
+        paper_context = rag_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
+        paper_context = f' Users SLR Context: {sys_context} \n\n' + paper_context
+        chat_history_str = mh.get_chat_history_as_string("mentor_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
         
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
