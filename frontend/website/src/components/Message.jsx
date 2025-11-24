@@ -1,11 +1,16 @@
 import React from 'react';
-import './Message.css';
+import styles from './Message.module.css';
+import Sources from './Sources';
 
-function Message({ title, message, sender }) {
+function Message({ title, message, sender, showSources }) {
   return (
-    <div className={`message-block ${sender}`}>
-      <div className={`message-sender ${sender}`}>{title}</div>
-      <div className={`message ${sender}`}>{message}</div>
+    <div className={`${styles.messageBlock} ${styles[sender]}`}>
+      <div className={`${styles.messageSender} ${styles[sender]}`}>{title}</div>
+      <div className={`${styles.message} ${styles[sender]}`}>
+        {message}
+
+        {showSources && <Sources showSources={true} />}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,51 @@
+.container {
+  width: 100%;
+  max-width: 100%;
+
+  padding: 1rem;
+  border-radius: 8px;
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;     /* center all inner content horizontally */
+  margin-top: 2rem;
+}
+
+.title {
+  width: 100%;
+  max-width: 900px;        /* optional, adjust for nice width */
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.textarea {
+  width: 100%;
+  max-width: 900px;        /* keeps it centered & readable */
+  min-height: 150px;
+  resize: vertical;
+  padding: 0.8rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  box-sizing: border-box;
+}
+
+.saveButton {
+  margin-top: 0.8rem;
+  padding: 0.5rem 1rem;
+  background: #0077cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  width: 100%;
+  max-width: 300px;     /* centered button */
+}
+
+.saveButton:hover {
+  background: #005fa3;
+}

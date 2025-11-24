@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Message from './Message';
+import Sources from './Sources';
 import '../ChatPage.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
 
@@ -37,6 +38,7 @@ function ChatMentor({ chatHash }) {
               sender: 'user',
               title: 'You',
               message: entry.user_message,
+              showSources: false
             });
           }
           if (entry.llm_response?.trim()) {
@@ -44,6 +46,7 @@ function ChatMentor({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
+              showSources: true // show Sources for AI messages
             });
           }
         });
@@ -54,7 +57,8 @@ function ChatMentor({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello👋 I am SLRmentor. You can ask me here about systematic literacture reviews in general!. How can I help you today?',
+          message: 'Hello👋 I am SLRmentor. You can ask me here about systematic literature reviews in general! How can I help you today?',
+          showSources: true
         });
       }
 
@@ -70,7 +74,7 @@ function ChatMentor({ chatHash }) {
 
     setMessages((prev) => [
       ...prev,
-      { sender: 'user', title: 'You', message: newMessage },
+      { sender: 'user', title: 'You', message: newMessage, showSources: false },
     ]);
 
     try {
@@ -85,14 +89,14 @@ function ChatMentor({ chatHash }) {
       if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
-          { sender: 'ai', title: 'SLRmentor', message: data.llm_response },
+          { sender: 'ai', title: 'SLRmentor', message: data.llm_response, showSources: true },
         ]);
       }
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.' },
+        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.', showSources: true },
       ]);
     }
 
@@ -105,7 +109,13 @@ function ChatMentor({ chatHash }) {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <Message key={i} sender={msg.sender} title={msg.title} message={msg.message} />
+          <Message 
+            key={i} 
+            sender={msg.sender} 
+            title={msg.title} 
+            message={msg.message} 
+            showSources={msg.showSources} 
+          />
         ))}
       </div>
 

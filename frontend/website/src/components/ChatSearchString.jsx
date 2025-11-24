@@ -50,6 +50,7 @@ function ChatSearchString({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
+              showSources: true, // Added: show sources for AI messages
             });
           }
         });
@@ -66,6 +67,7 @@ function ChatSearchString({ chatHash }) {
           sender: 'ai',
           title: 'SLRmentor',
           message: 'Hello👋 I am SLRmentor. Give me your study goal and I will help you create your search string!',
+          showSources: true, // show sources for greeting as well
         });
       }
 
@@ -109,7 +111,12 @@ function ChatSearchString({ chatHash }) {
       if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
-          { sender: 'ai', title: 'SLRmentor', message: data.llm_response },
+          { 
+            sender: 'ai', 
+            title: 'SLRmentor', 
+            message: data.llm_response, 
+            showSources: true, // Added
+          },
         ]);
         setSearchString(data.updated_search_string || '');
         setSearchStringFormat(data.search_string_format || '');
@@ -118,7 +125,7 @@ function ChatSearchString({ chatHash }) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.' },
+        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.', showSources: true },
       ]);
     }
 
@@ -131,7 +138,13 @@ function ChatSearchString({ chatHash }) {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <Message key={i} sender={msg.sender} title={msg.title} message={msg.message} />
+          <Message
+            key={i}
+            sender={msg.sender}
+            title={msg.title}
+            message={msg.message}
+            showSources={msg.showSources || false} // Pass showSources to Message
+          />
         ))}
       </div>
 

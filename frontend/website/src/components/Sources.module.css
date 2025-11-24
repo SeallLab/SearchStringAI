@@ -1,0 +1,51 @@
+.wrapper {
+  display: inline-block;
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+.iconButton {
+  font-weight: bold;
+  color: #007bff;
+  border: 1px solid #007bff;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}
+
+.iconButton:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.popup {
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  width: 320px;
+  max-width: 400px;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  z-index: 100;
+  font-size: 0.75rem;
+  white-space: normal;
+}
+
+.popup ul {
+  padding-left: 1rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+}
