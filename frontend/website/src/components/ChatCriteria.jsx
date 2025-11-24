@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Message from './Message';
+import Sources from './Sources';
 import '../ChatPage.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
 
@@ -39,6 +40,7 @@ function ChatCriteria({ chatHash }) {
               sender: 'user',
               title: 'You',
               message: entry.user_message,
+              showSources: false,
             });
           }
 
@@ -47,6 +49,7 @@ function ChatCriteria({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
+              showSources: true,
             });
           }
         });
@@ -62,6 +65,7 @@ function ChatCriteria({ chatHash }) {
           sender: 'ai',
           title: 'SLRmentor',
           message: 'Hello👋 I am SLRmentor. Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!',
+          showSources: true,
         });
       }
 
@@ -80,7 +84,7 @@ function ChatCriteria({ chatHash }) {
 
     setMessages((prev) => [
       ...prev,
-      { sender: 'user', title: 'You', message: newMessage },
+      { sender: 'user', title: 'You', message: newMessage, showSources: false },
     ]);
 
     try {
@@ -95,7 +99,7 @@ function ChatCriteria({ chatHash }) {
       if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
-          { sender: 'ai', title: 'SLRmentor', message: data.llm_response },
+          { sender: 'ai', title: 'SLRmentor', message: data.llm_response, showSources: true },
         ]);
         setCriteria(data.updated_criteria || '');
       }
@@ -103,7 +107,7 @@ function ChatCriteria({ chatHash }) {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.' },
+        { sender: 'ai', title: 'SLRmentor', message: 'Error sending message.', showSources: true },
       ]);
     }
 
@@ -116,7 +120,13 @@ function ChatCriteria({ chatHash }) {
 
       <div className="chat-history">
         {messages.map((msg, i) => (
-          <Message key={i} sender={msg.sender} title={msg.title} message={msg.message} />
+          <Message 
+            key={i} 
+            sender={msg.sender} 
+            title={msg.title} 
+            message={msg.message} 
+            showSources={msg.showSources} 
+          />
         ))}
       </div>
 

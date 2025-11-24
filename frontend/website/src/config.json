@@ -9,7 +9,9 @@
     "getCriteriaChatHistory": "/getcriteriachathistory",
     "criteria": "/criteria",
     "getMentorchathistory": "/getmentorchathistory",
-    "Mentor": "/mentor"
+    "Mentor": "/mentor",
+    "getSystemContext": "/getsystemcontext",
+    "setSystemContext": "/setsystemcontext"
 
   }
 }

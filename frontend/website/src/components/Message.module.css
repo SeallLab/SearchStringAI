@@ -1,25 +1,37 @@
-.message-block {
+.messageBlock {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   width: 100%;
 }
 
-.message-block.user {
+/* Sender-specific alignment */
+.user {
   align-items: flex-end;
 }
 
-.message-block.ai {
+.ai {
   align-items: flex-start;
 }
 
-.message-sender {
+/* Sender title */
+.messageSender {
   font-size: 0.75rem;
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
 
+.messageSender.user {
+  color: #0073ff;
+  text-align: right;
+}
 
+.messageSender.ai {
+  color: #5a0000;
+  text-align: left;
+}
+
+/* Message bubble */
 .message {
   padding: 0.5rem 1rem;
   border-radius: 15px;
@@ -28,9 +40,13 @@
 }
 
 .message.user {
+  background-color: #2d2d2d;
+  color: white;
   text-align: right;
 }
 
 .message.ai {
+  background-color: #0f0f0f;
+  color: white;
   text-align: left;
 }

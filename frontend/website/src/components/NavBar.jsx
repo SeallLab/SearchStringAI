@@ -21,7 +21,7 @@ export default function NavBar() {
             className={styles.navButton}
             onClick={() => setShowPdfPopup(prev => !prev)}
           >
-            About an SLR
+            About SLRs
           </button>
 
           <button

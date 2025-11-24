@@ -5,6 +5,9 @@ import ChatSearchString from './components/ChatSearchString'
 import ChatCriteria from './components/ChatCriteria'
 import ChatMentor from './components/ChatMentor'
 import './ChatPage.css'
+import SystemContext from "./components/SystemContext";
+
+
 
 function ChatPage() {
   const { chatHash } = useParams()
@@ -51,6 +54,7 @@ function ChatPage() {
           {activeTab === 'searchString' && <ChatSearchString chatHash={chatHash} />}
           {activeTab === 'criteria' && <ChatCriteria chatHash={chatHash} />}
         </div>
+        <SystemContext chatHash={chatHash} />
       </div>
     </>
   )
