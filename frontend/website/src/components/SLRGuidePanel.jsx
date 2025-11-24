@@ -1,7 +1,7 @@
 import React from "react";
-import styles from "./WhatsASLRPopup.module.css";
+import styles from "./SLRGuidePanel.module.css";
 
-export default function WhatsASLRPopup({ onClose }) {
+export default function SLRGuidePanel({ onClose }) {
   return (
     <div className={styles.overlay} onClick={onClose}>
       <button className={styles.closeButton} onClick={onClose}>
@@ -13,7 +13,7 @@ export default function WhatsASLRPopup({ onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         <iframe
-          src="/SEALL- SLRMentor Student Guide.pdf"
+          src="/SLRguide.pdf"
           className={styles.pdfViewer}
           title="What's an SLR PDF"
         />

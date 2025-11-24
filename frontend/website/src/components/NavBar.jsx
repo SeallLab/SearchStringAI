@@ -1,40 +1,52 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './NavBar.module.css';
-import SLRGuidePopup from './SLRGuidePopup';
-import WhatsASLRPopup from './WhatsASLRPopup';
+import SLRGuidePanel from './SLRGuidePanel';
+import PdfPopup from './PdfPopup';
 
 export default function NavBar() {
   const [showSLRGuide, setShowSLRGuide] = useState(false);
-  const [showWhatsASLR, setShowWhatsASLR] = useState(false);
+  const [showPdfPopup, setShowPdfPopup] = useState(false);
 
   return (
     <>
       <nav className={styles.navbar}>
         <Link to="/" className={styles.homeLink}>
-          <img src="/bita_recolor.png" alt="SLRmentor Logo" className={styles.logo} />
+          <img src="/slrmentorv2-removebg-preview.png" alt="SLRmentor Logo" className={styles.logo} />
           <span className={styles.title}>SLRmentor</span>
         </Link>
 
         <div className={styles.navButtons}>
           <button
             className={styles.navButton}
-            onClick={() => setShowWhatsASLR(true)}
+            onClick={() => setShowPdfPopup(prev => !prev)}
           >
-            What's a SLR?
+            About an SLR
           </button>
+
           <button
             className={styles.navButton}
-            onClick={() => setShowSLRGuide(true)}
+            onClick={() => setShowSLRGuide(prev => !prev)}
           >
             SLR Guide
           </button>
-          <button className={styles.navButton}>How to Use SLRmentor</button>
+
+          <button className={styles.navButton}>
+            How to Use SLRmentor
+          </button>
         </div>
       </nav>
 
-      {showSLRGuide && <SLRGuidePopup onClose={() => setShowSLRGuide(false)} />}
-      {showWhatsASLR && <WhatsASLRPopup onClose={() => setShowWhatsASLR(false)} />}
+      {showSLRGuide && (
+        <SLRGuidePanel onClose={() => setShowSLRGuide(false)} />
+      )}
+
+      {showPdfPopup && (
+        <PdfPopup
+          file="/SEALL- SLRMentor Student Guide.pdf"
+          onClose={() => setShowPdfPopup(false)}
+        />
+      )}
     </>
   );
 }
