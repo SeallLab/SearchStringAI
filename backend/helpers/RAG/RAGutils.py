@@ -2,7 +2,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import MongoDBAtlasVectorSearch
 import os
 
-def initialize_retriever(mongo_uri: str, namespace: str = "SLRMentor.document_rag", index_name: str = "vector_index"):
+def initialize_retriever(mongo_uri: str, namespace: str = "SLRMentor.document_rag", index_name: str = "vector_index", top_k: int = 5):
     """
     Initialize a LangChain retriever using MongoDB Atlas and HuggingFace embeddings.
     """
@@ -13,7 +13,7 @@ def initialize_retriever(mongo_uri: str, namespace: str = "SLRMentor.document_ra
         embedding=embedding_model,
         index_name=index_name
     )
-    retriever = vector_store.as_retriever()
+    retriever = vector_store.as_retriever(search_kwargs={"k": top_k})
     return retriever
 
 
@@ -74,7 +74,7 @@ def format_docs_prompt(docs: list, prescript: str = "", count: int = 0) -> list:
             return docs
         else:
             if count == 1:
-                prescript_text =  prescript + f" {i+1}\n" + ": "
+                prescript_text =  prescript + f" {i+1}" + ": "
             else:
                 prescript_text = prescript + ": "
         texts.append(prescript_text + docs[i])

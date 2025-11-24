@@ -10,6 +10,7 @@ import helpers.cryptographic_helpers as ch #Generating chat hashes
 from helpers.llm.promptBuilder import Prompt #for building prompts
 import helpers.llm.llmPromptingUtils as pu #for actually calling the AI API
 from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_safe, format_docs, format_docs_prompt
+from helpers.db.mongodbhelpers import MongoHelper
 
 # from google.genai.types import HttpOptions
 
@@ -18,12 +19,16 @@ from helpers.RAG.RAGutils import initialize_retriever, get_relevant_documents_sa
 app = Flask(__name__)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 mongo = PyMongo(app)
+mh = MongoHelper(mongo)
 CORS(app)
+
 hash_byte_length = 16
 chat_hash_length = 8
+message_history_limit = 30
+RAG_doc_limit = 10
 gemini_key = os.getenv('GEMINI_API_KEY')
 gpt_key = os.getenv('GPT_API_KEY')
-retriever = initialize_retriever(os.getenv("MONGO_URI")) #For RAG
+retriever = initialize_retriever(mongo_uri=os.getenv("MONGO_URI"), top_k=RAG_doc_limit) #For RAG
 
 
 @app.route("/", methods=['GET'])
@@ -261,24 +266,24 @@ def prompt():
         paper_context = ""
         base_prompt = ""
         # Read all prompt components using UTF-8 to prevent decode issues
-        with open("helpers/llm/prompts/identifyingKeyWordsPrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/identifyingKeyWordsPrompt.txt", "r", encoding="utf-8") as f:
             identify_kw_prompt = f.read()
 
-        with open("helpers/llm/prompts/userInputPrompt.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/userInputPrompt.txt", "r", encoding="utf-8") as f:
             user_input_prompt = f.read()
 
-        with open("helpers/llm/prompts/specificationFollowup.txt", "r", encoding="utf-8") as f:
+        with open("helpers/llm/prompts/searchstrings/specificationFollowup.txt", "r", encoding="utf-8") as f:
             end_specification = f.read()
         
 
         user_input = f'User Input: {data["user_message"]} \n \n'
         if current_search_string.strip() == "":
-            with open("helpers/llm/prompts/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
+            with open("helpers/llm/prompts/searchstrings/baseQuestionPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
             paper_context = ""
             current_search_string_format = "General"
         else:
-            with open("helpers/llm/prompts/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
+            with open("helpers/llm/prompts/searchstrings/baseFollowupPrompt.txt", "r", encoding="utf-8") as f:
                 base_prompt = f.read()
 
             paper_context = f'Current search string: {current_search_string} \n \n'
@@ -292,20 +297,20 @@ def prompt():
             if isinstance(abstracts, str): #if there was no error getting the abstracts
                 paper_context = paper_context + f'\n \nHere is the tittles and abstracts returned by the current search string for context: \n' + abstracts 
 
-            
-
-        
-        
+        chat_history_str = mh.get_chat_history_as_string("search_string_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
         
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(identify_kw_prompt)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
         
+        print(full_prompt)
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -570,14 +575,18 @@ def criteria():
                 base_prompt = f.read()
             paper_context = f"Current inclusion/exclusion criteria:\n{current_criteria}\n\n"
 
+        chat_history_str = mh.get_chat_history_as_string("criteria_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
     
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
+        print(full_prompt)
         #callin llm
         llm_response = {}
         ai_used = ""
@@ -636,7 +645,7 @@ def criteria():
     
 @app.route("/ragquery", methods=["POST"])
 def rag_query():
-    request_required_fields = ["hash_plain_text", "user_message"]
+    request_required_fields = ["user_message"]
     return_request = {
         "status": False,
         "message": "",
@@ -649,17 +658,11 @@ def rag_query():
         if check_missing_or_blank_fields(data, request_required_fields):
             raise ValueError("Request missing required fields")
 
-        hash = data["hash_plain_text"]
         user_message = data["user_message"]
-
-        # Validate hash exists
-        chat_doc = mongo.db.search_string_chats.find_one({"_id": hash})
-        if not chat_doc:
-            raise ValueError("Chat with given hash doesn't exist")
 
         # Safely retrieve documents
         top_docs = get_relevant_documents_safe(retriever, user_message)
-        formatted_docs = format_top_documents(top_docs, top_k=5)
+        formatted_docs = format_docs(top_docs)
 
         return_request.update({
             "status": True,
@@ -749,11 +752,14 @@ def mentor():
             
         paper_context = "The following is some relevant context and information in no perticular order to help you answer the users question: \n" + "\n".join(rag_context_formated_docs) + "\n\n"
         paper_context = paper_context + f'Current search string: {current_search_string} \n \n' + f'Current inclusion/exclusion criteria:\n{current_criteria}\n\n'
+        chat_history_str = mh.get_chat_history_as_string("mentor_chats", message_history_limit, hash)
+        chat_history_str = "\n\nRecent Message History:\n" + chat_history_str + "\nEnd of Recent Message History\n\n"
         
         prompt = Prompt()
         prompt.append_item(base_prompt)
         prompt.append_item(paper_context)
         prompt.append_item(user_input_prompt)
+        prompt.append_item(chat_history_str)
         prompt.append_item(user_input)
         prompt.append_item(end_specification)
         full_prompt = prompt.get_prompt_as_str()
