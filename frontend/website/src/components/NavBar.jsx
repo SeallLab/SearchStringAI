@@ -7,6 +7,7 @@ import PdfPopup from './PdfPopup';
 export default function NavBar() {
   const [showSLRGuide, setShowSLRGuide] = useState(false);
   const [showPdfPopup, setShowPdfPopup] = useState(false);
+  const [showHowToPopup, setShowHowToPopup] = useState(false);  // NEW STATE
 
   return (
     <>
@@ -31,7 +32,10 @@ export default function NavBar() {
             SLR Guide
           </button>
 
-          <button className={styles.navButton}>
+          <button
+            className={styles.navButton}
+            onClick={() => setShowHowToPopup(prev => !prev)}  // SAME BEHAVIOUR
+          >
             How to Use SLRmentor
           </button>
         </div>
@@ -45,6 +49,13 @@ export default function NavBar() {
         <PdfPopup
           file="/SEALL- SLRMentor Student Guide.pdf"
           onClose={() => setShowPdfPopup(false)}
+        />
+      )}
+
+      {showHowToPopup && (   // NEW POPUP
+        <PdfPopup
+          file="/SLRmentor Guide.pdf"
+          onClose={() => setShowHowToPopup(false)}
         />
       )}
     </>
