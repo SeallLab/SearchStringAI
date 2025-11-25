@@ -167,10 +167,10 @@ You can visit [http://127.0.0.1:5000/](http://127.0.0.1:5000/) to check if the s
 ---
 
 1️⃣ Build the image from the current directory in the backend
-docker build -t seallabuofc/slrmentor-backend:v2.0 .
+docker build -t seallabuofc/slrmentor-backend:v2.1 .
 
 Optionally, also tag it as latest:
-docker tag seallabuofc/slrmentor-backend:v2.0 seallabuofc/slrmentor-backend:latest
+docker tag seallabuofc/slrmentor-backend:v2.1 seallabuofc/slrmentor-backend:latest
 
 
 2️⃣ Run the container with the .env file
@@ -183,7 +183,7 @@ docker login
 
 Push the version tag:
 
-docker push seallabuofc/slrmentor-backend:v2.0
+docker push seallabuofc/slrmentor-backend:v2.1
 
 docker push seallabuofc/slrmentor-backend:latest
 

@@ -22,3 +22,5 @@ Inclusion | INC1 Discription of Criterion
           | INC3 Discription of Criterion
 
 You need to include the headers and space the items such that they will line up nicely becasue you will be writing it in plain text. The list can be shorter or longer.
+When making your answer. Dont refer to the provided context. For example "context 1 says ...." .
+Just take the information and present it coherently.
