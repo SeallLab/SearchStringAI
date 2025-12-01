@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Message from './Message';
-import Sources from './Sources';
 import '../ChatPage.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
 
@@ -8,6 +7,8 @@ function ChatMentor({ chatHash }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [error, setError] = useState(null);
+
+  const chatRef = useRef(null); // ref for chat history container
 
   // Fetch mentor chat history
   useEffect(() => {
@@ -38,7 +39,7 @@ function ChatMentor({ chatHash }) {
               sender: 'user',
               title: 'You',
               message: entry.user_message,
-              showSources: false
+              showSources: false,
             });
           }
           if (entry.llm_response?.trim()) {
@@ -46,7 +47,7 @@ function ChatMentor({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
-              showSources: true // show Sources for AI messages
+              showSources: true, // show Sources for AI messages
             });
           }
         });
@@ -57,8 +58,9 @@ function ChatMentor({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello👋 I am SLRmentor. You can ask me here about systematic literature reviews in general! How can I help you today?',
-          showSources: true
+          message:
+            'Hello👋 I am SLRmentor. You can ask me here about systematic literature reviews in general! How can I help you today?',
+          showSources: true,
         });
       }
 
@@ -67,6 +69,16 @@ function ChatMentor({ chatHash }) {
 
     if (chatHash) populateChatHistory();
   }, [chatHash]);
+
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   // Send message to Mentor endpoint
   const sendMessage = async () => {
@@ -107,14 +119,14 @@ function ChatMentor({ chatHash }) {
     <div className="chat-container">
       <h2 className="chat-header">Chat with Mentor</h2>
 
-      <div className="chat-history">
+      <div ref={chatRef} className="chat-history">
         {messages.map((msg, i) => (
-          <Message 
-            key={i} 
-            sender={msg.sender} 
-            title={msg.title} 
-            message={msg.message} 
-            showSources={msg.showSources} 
+          <Message
+            key={i}
+            sender={msg.sender}
+            title={msg.title}
+            message={msg.message}
+            showSources={msg.showSources}
           />
         ))}
       </div>
@@ -127,7 +139,9 @@ function ChatMentor({ chatHash }) {
           placeholder="Ask SLRmentor something about... SLRs!"
           className="chat-input"
         />
-        <button onClick={sendMessage} className="send-button">Send</button>
+        <button onClick={sendMessage} className="send-button">
+          Send
+        </button>
       </div>
 
       {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}

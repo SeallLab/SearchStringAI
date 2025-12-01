@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Message from './Message';
 import '../ChatPage.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
@@ -12,6 +12,8 @@ function ChatSearchString({ chatHash }) {
   const [showFormatsDropdown, setShowFormatsDropdown] = useState(false);
   const [loadingConversion, setLoadingConversion] = useState(false);
   const [error, setError] = useState(null);
+
+  const chatRef = useRef(null); // ref for chat history
 
   // Fetch chat history
   useEffect(() => {
@@ -50,7 +52,7 @@ function ChatSearchString({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
-              showSources: true, // Added: show sources for AI messages
+              showSources: true,
             });
           }
         });
@@ -67,7 +69,7 @@ function ChatSearchString({ chatHash }) {
           sender: 'ai',
           title: 'SLRmentor',
           message: 'Hello👋 I am SLRmentor. Give me your study goal and I will help you create your search string!',
-          showSources: true, // show sources for greeting as well
+          showSources: true,
         });
       }
 
@@ -91,6 +93,16 @@ function ChatSearchString({ chatHash }) {
     fetchFormats();
   }, []);
 
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
+
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -107,7 +119,6 @@ function ChatSearchString({ chatHash }) {
       });
       const data = await response.json();
 
-      // Only add AI response if non-empty
       if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
@@ -115,7 +126,7 @@ function ChatSearchString({ chatHash }) {
             sender: 'ai', 
             title: 'SLRmentor', 
             message: data.llm_response, 
-            showSources: true, // Added
+            showSources: true,
           },
         ]);
         setSearchString(data.updated_search_string || '');
@@ -136,14 +147,14 @@ function ChatSearchString({ chatHash }) {
     <div className="chat-container">
       <h2 className="chat-header">Chat for Search String</h2>
 
-      <div className="chat-history">
+      <div ref={chatRef} className="chat-history">
         {messages.map((msg, i) => (
           <Message
             key={i}
             sender={msg.sender}
             title={msg.title}
             message={msg.message}
-            showSources={msg.showSources || false} // Pass showSources to Message
+            showSources={msg.showSources || false}
           />
         ))}
       </div>

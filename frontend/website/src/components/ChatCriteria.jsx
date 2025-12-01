@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Message from './Message';
-import Sources from './Sources';
 import '../ChatPage.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
 
@@ -10,6 +9,8 @@ function ChatCriteria({ chatHash }) {
   const [criteria, setCriteria] = useState('');
   const [criteriaExists, setCriteriaExists] = useState(false);
   const [error, setError] = useState(null);
+
+  const chatRef = useRef(null); // ref for chat history container
 
   // Fetch chat history
   useEffect(() => {
@@ -64,7 +65,8 @@ function ChatCriteria({ chatHash }) {
         formattedMessages.push({
           sender: 'ai',
           title: 'SLRmentor',
-          message: 'Hello👋 I am SLRmentor. Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!',
+          message:
+            'Hello👋 I am SLRmentor. Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!',
           showSources: true,
         });
       }
@@ -78,6 +80,16 @@ function ChatCriteria({ chatHash }) {
   useEffect(() => {
     setCriteriaExists(criteria.trim() !== '');
   }, [criteria]);
+
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -118,14 +130,14 @@ function ChatCriteria({ chatHash }) {
     <div className="chat-container">
       <h2 className="chat-header">Chat for Inclusion/Exclusion Criteria</h2>
 
-      <div className="chat-history">
+      <div ref={chatRef} className="chat-history">
         {messages.map((msg, i) => (
-          <Message 
-            key={i} 
-            sender={msg.sender} 
-            title={msg.title} 
-            message={msg.message} 
-            showSources={msg.showSources} 
+          <Message
+            key={i}
+            sender={msg.sender}
+            title={msg.title}
+            message={msg.message}
+            showSources={msg.showSources}
           />
         ))}
       </div>

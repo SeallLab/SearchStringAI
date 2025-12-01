@@ -1,7 +1,8 @@
 .wrapper {
-  display: inline-block;
-  position: relative;
-  margin-left: 0.5rem;
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: inherit; /* follows message alignment (user/ai) */
 }
 
 .iconButton {
@@ -18,6 +19,7 @@
   cursor: pointer;
   background: transparent;
   padding: 0;
+  margin-bottom: 0.4rem;
 }
 
 .iconButton:hover {
@@ -25,27 +27,37 @@
   color: white;
 }
 
-.popup {
-  position: absolute;
-  bottom: 125%;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #1a1a1a;
+/* The sources no longer float — they expand INSIDE the message bubble */
+.sourceList {
+  background-color: #1a1a1a; /* ✅ original dark */
   color: #fff;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  width: 320px;
-  max-width: 400px;
-  max-height: 250px;
-  overflow-y: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  z-index: 100;
+  padding: 0.6rem 0.9rem;
+  border-radius: 8px;
   font-size: 0.75rem;
-  white-space: normal;
+  line-height: 1.1rem;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
 }
 
-.popup ul {
+/* List styling */
+.sourceList ul {
   padding-left: 1rem;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
   margin-bottom: 0;
+}
+
+.sourceList li {
+  margin-bottom: 0.3rem;
+  opacity: 0.92;
+}
+
+/* Optional scrollbar styling */
+.sourceList::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sourceList::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: rgba(255,255,255,0.15);
 }
