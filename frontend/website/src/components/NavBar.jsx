@@ -13,7 +13,7 @@ export default function NavBar() {
     <>
       <nav className={styles.navbar}>
         <Link to="/" className={styles.homeLink}>
-          <img src="/slrmentorv2-removebg-preview.png" alt="SLRmentor Logo" className={styles.logo} />
+          <img src="/bita_recolor_with_hat.png" alt="SLRmentor Logo" className={styles.logo} />
           <span className={styles.title}>SLRmentor</span>
         </Link>
 
