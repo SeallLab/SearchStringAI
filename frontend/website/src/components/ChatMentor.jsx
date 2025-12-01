@@ -118,7 +118,7 @@ function ChatMentor({ chatHash }) {
     <div className={styles['chat-mentor-wrapper']}>
       {/* Left image */}
       <img
-        src="/SLRpracticalGuide2.png"
+        src="/slrguide.png"
         alt="SLR Practical Guide"
         className={styles['mentor-image']}
       />
