@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Message from './Message';
-import '../ChatPage.css';
+import styles from './ChatMentor.module.css';
 import { API_BASE, ENDPOINTS } from '../apiConfig';
 
 function ChatMentor({ chatHash }) {
@@ -47,13 +47,12 @@ function ChatMentor({ chatHash }) {
               sender: 'ai',
               title: 'SLRmentor',
               message: entry.llm_response,
-              showSources: true, // show Sources for AI messages
+              showSources: true,
             });
           }
         });
       }
 
-      // If no messages, add AI greeting
       if (formattedMessages.length === 0) {
         formattedMessages.push({
           sender: 'ai',
@@ -70,7 +69,7 @@ function ChatMentor({ chatHash }) {
     if (chatHash) populateChatHistory();
   }, [chatHash]);
 
-  // Auto-scroll to bottom whenever messages change
+  // Auto-scroll to bottom
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
@@ -80,7 +79,7 @@ function ChatMentor({ chatHash }) {
     }
   }, [messages]);
 
-  // Send message to Mentor endpoint
+  // Send message
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -116,35 +115,45 @@ function ChatMentor({ chatHash }) {
   };
 
   return (
-    <div className="chat-container">
-      <h2 className="chat-header">Chat with Mentor</h2>
+    <div className={styles['chat-mentor-wrapper']}>
+      {/* Left image */}
+      <img
+        src="/SLRpracticalGuide2.png"
+        alt="SLR Practical Guide"
+        className={styles['mentor-image']}
+      />
 
-      <div ref={chatRef} className="chat-history">
-        {messages.map((msg, i) => (
-          <Message
-            key={i}
-            sender={msg.sender}
-            title={msg.title}
-            message={msg.message}
-            showSources={msg.showSources}
+      {/* Chat content */}
+      <div className={styles['chat-content']}>
+        <h2 className="chat-header">Chat with Mentor</h2>
+
+        <div ref={chatRef} className={styles['chat-history']}>
+          {messages.map((msg, i) => (
+            <Message
+              key={i}
+              sender={msg.sender}
+              title={msg.title}
+              message={msg.message}
+              showSources={msg.showSources}
+            />
+          ))}
+        </div>
+
+        <div className="chat-input-container">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Ask SLRmentor something about... SLRs!"
+            className="chat-input"
           />
-        ))}
-      </div>
+          <button onClick={sendMessage} className="send-button">
+            Send
+          </button>
+        </div>
 
-      <div className="chat-input-container">
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Ask SLRmentor something about... SLRs!"
-          className="chat-input"
-        />
-        <button onClick={sendMessage} className="send-button">
-          Send
-        </button>
+        {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
       </div>
-
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
     </div>
   );
 }

@@ -25,12 +25,6 @@ export default function NavBar() {
             About SLRs
           </button>
 
-          <button
-            className={styles.navButton}
-            onClick={() => setShowSLRGuide(prev => !prev)}
-          >
-            SLR Guide
-          </button>
 
           <button
             className={styles.navButton}
