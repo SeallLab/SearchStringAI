@@ -69,7 +69,7 @@ export default function SystemContext({ chatHash }) {
             className={styles.textarea}
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="Enter system context..."
+            placeholder="Enter here the context of your research, so I can refine my answers based on it!"
           />
 
           <button className={styles.saveButton} onClick={saveContext}>

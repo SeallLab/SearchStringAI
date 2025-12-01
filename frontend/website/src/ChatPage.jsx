@@ -4,14 +4,12 @@ import NavBar from './components/NavBar'
 import ChatSearchString from './components/ChatSearchString'
 import ChatCriteria from './components/ChatCriteria'
 import ChatMentor from './components/ChatMentor'
+import SystemContext from './components/SystemContext'
 import './ChatPage.css'
-import SystemContext from "./components/SystemContext";
-
-
 
 function ChatPage() {
   const { chatHash } = useParams()
-  const [activeTab, setActiveTab] = useState('mentor') // default to Mentor Chat first
+  const [activeTab, setActiveTab] = useState('mentor') // default tab
 
   useEffect(() => {
     if (chatHash) {
@@ -27,7 +25,7 @@ function ChatPage() {
         <span className="chatID-value">{chatHash}</span>
       </div>
 
-      <div className="chat-page-wrapper">
+      <div className="chat-page-column">
         <div className="tabs-container">
           <button
             className={`tab-button ${activeTab === 'mentor' ? 'active' : ''}`}
@@ -54,6 +52,8 @@ function ChatPage() {
           {activeTab === 'searchString' && <ChatSearchString chatHash={chatHash} />}
           {activeTab === 'criteria' && <ChatCriteria chatHash={chatHash} />}
         </div>
+
+        {/* System context below chat */}
         <SystemContext chatHash={chatHash} />
       </div>
     </>
