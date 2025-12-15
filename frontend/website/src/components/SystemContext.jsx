@@ -58,7 +58,7 @@ export default function SystemContext({ chatHash }) {
   }
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} id="system-context">
       <h3 className={styles.title}>SLR Context</h3>
 
       {loading ? (
@@ -66,13 +66,18 @@ export default function SystemContext({ chatHash }) {
       ) : (
         <>
           <textarea
+            id="system-context-textarea"
             className={styles.textarea}
             value={context}
             onChange={(e) => setContext(e.target.value)}
             placeholder="Enter here the context of your research, so I can refine my answers based on it!"
           />
 
-          <button className={styles.saveButton} onClick={saveContext}>
+          <button
+            id="system-context-save"
+            className={styles.saveButton}
+            onClick={saveContext}
+          >
             Save
           </button>
 
