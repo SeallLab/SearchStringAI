@@ -13,9 +13,8 @@ function ChatSearchString({ chatHash }) {
   const [loadingConversion, setLoadingConversion] = useState(false);
   const [error, setError] = useState(null);
 
-  const chatRef = useRef(null); // ref for chat history
+  const chatRef = useRef(null);
 
-  // Fetch chat history
   useEffect(() => {
     const getChat = async () => {
       try {
@@ -57,13 +56,11 @@ function ChatSearchString({ chatHash }) {
           }
         });
 
-        // Set search string from last chat entry if present
         const lastEntry = data.chat_history[data.chat_history.length - 1];
         if (lastEntry?.search_string) setSearchString(lastEntry.search_string);
         if (lastEntry?.search_string_format) setSearchStringFormat(lastEntry.search_string_format);
       }
 
-      // If chat history is empty, add AI greeting
       if (formattedMessages.length === 0) {
         formattedMessages.push({
           sender: 'ai',
@@ -79,7 +76,6 @@ function ChatSearchString({ chatHash }) {
     if (chatHash) populateChatHistory();
   }, [chatHash]);
 
-  // Fetch available formats
   useEffect(() => {
     const fetchFormats = async () => {
       try {
@@ -93,7 +89,6 @@ function ChatSearchString({ chatHash }) {
     fetchFormats();
   }, []);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
@@ -122,10 +117,10 @@ function ChatSearchString({ chatHash }) {
       if (data.status === true && data.llm_response?.trim()) {
         setMessages((prev) => [
           ...prev,
-          { 
-            sender: 'ai', 
-            title: 'SLRmentor', 
-            message: data.llm_response, 
+          {
+            sender: 'ai',
+            title: 'SLRmentor',
+            message: data.llm_response,
             showSources: true,
           },
         ]);
@@ -143,11 +138,54 @@ function ChatSearchString({ chatHash }) {
     setNewMessage('');
   };
 
+  const convertFormat = async (newFormat) => {
+    if (!searchString) return;
+
+    setLoadingConversion(true);
+    setError(null);
+
+    try {
+      // If you have a backend route for conversion, add it to apiConfig as ENDPOINTS.convertSearchString
+      if (ENDPOINTS.convertSearchString) {
+        const response = await fetch(`${API_BASE}${ENDPOINTS.convertSearchString}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hash_plain_text: chatHash,
+            search_string: searchString,
+            target_format: newFormat,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data?.status === true) {
+          // Expecting backend to return converted string + format
+          setSearchString(data.converted_search_string || searchString);
+          setSearchStringFormat(data.search_string_format || newFormat);
+        } else {
+          // Fallback: update label only
+          setSearchStringFormat(newFormat);
+        }
+      } else {
+        // No endpoint provided: update label only (UI still matches the guide)
+        setSearchStringFormat(newFormat);
+      }
+
+      setShowFormatsDropdown(false);
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred while converting formats.');
+    } finally {
+      setLoadingConversion(false);
+    }
+  };
+
   return (
     <div className="chat-container">
       <h2 className="chat-header">Chat for Search String</h2>
 
-      <div ref={chatRef} className="chat-history">
+      <div ref={chatRef} className="chat-history" id="search-chat-history">
         {messages.map((msg, i) => (
           <Message
             key={i}
@@ -160,13 +198,16 @@ function ChatSearchString({ chatHash }) {
       </div>
 
       {searchString && (
-        <div className="search-string-div">
+        <div className="search-string-div" id="search-string-panel">
           <pre className="search-string">{searchString}</pre>
+
           <div className="format-display-row">
-            <span className="search-string-format">
+            <span className="search-string-format" id="search-string-current-format">
               <strong>Current Format:</strong> {searchStringFormat || 'General'}
             </span>
+
             <button
+              id="search-string-different-formats"
               className="formats-toggle-button"
               onClick={() => setShowFormatsDropdown((prev) => !prev)}
               disabled={loadingConversion}
@@ -177,16 +218,29 @@ function ChatSearchString({ chatHash }) {
           </div>
 
           {showFormatsDropdown && (
-            <ul className="formats-dropdown">
+            <ul className="formats-dropdown" id="search-string-formats-dropdown">
               {availableFormats
                 .filter((format) => format !== searchStringFormat)
                 .map((format, idx) => (
-                  <li key={idx}>{format}</li>
+                  <li key={idx}>
+                    <button
+                      type="button"
+                      className="formats-dropdown-item"
+                      onClick={() => convertFormat(format)}
+                      disabled={loadingConversion}
+                    >
+                      {format}
+                    </button>
+                  </li>
                 ))}
             </ul>
           )}
 
-          <button className="copy-button" onClick={() => navigator.clipboard.writeText(searchString)}>
+          <button
+            id="search-string-copy"
+            className="copy-button"
+            onClick={() => navigator.clipboard.writeText(searchString)}
+          >
             Copy Search String
           </button>
         </div>
@@ -194,6 +248,7 @@ function ChatSearchString({ chatHash }) {
 
       <div className="chat-input-container">
         <input
+          id="search-chat-input"
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
@@ -201,7 +256,12 @@ function ChatSearchString({ chatHash }) {
           className="chat-input"
           disabled={loadingConversion}
         />
-        <button onClick={sendMessage} className="send-button" disabled={loadingConversion}>
+        <button
+          id="search-send-button"
+          onClick={sendMessage}
+          className="send-button"
+          disabled={loadingConversion}
+        >
           Send
         </button>
       </div>

@@ -8,9 +8,8 @@ function ChatMentor({ chatHash }) {
   const [newMessage, setNewMessage] = useState('');
   const [error, setError] = useState(null);
 
-  const chatRef = useRef(null); // ref for chat history container
+  const chatRef = useRef(null);
 
-  // Fetch mentor chat history
   useEffect(() => {
     const getMentorChat = async () => {
       try {
@@ -69,7 +68,6 @@ function ChatMentor({ chatHash }) {
     if (chatHash) populateChatHistory();
   }, [chatHash]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
@@ -79,7 +77,6 @@ function ChatMentor({ chatHash }) {
     }
   }, [messages]);
 
-  // Send message
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
@@ -116,18 +113,16 @@ function ChatMentor({ chatHash }) {
 
   return (
     <div className={styles['chat-mentor-wrapper']}>
-      {/* Left image */}
       <img
         src="/slrguide.png"
         alt="SLR Practical Guide"
         className={styles['mentor-image']}
       />
 
-      {/* Chat content */}
       <div className={styles['chat-content']}>
         <h2 className="chat-header">Chat with Mentor</h2>
 
-        <div ref={chatRef} className={styles['chat-history']}>
+        <div ref={chatRef} className={styles['chat-history']} id="mentor-chat-history">
           {messages.map((msg, i) => (
             <Message
               key={i}
@@ -141,13 +136,14 @@ function ChatMentor({ chatHash }) {
 
         <div className="chat-input-container">
           <input
+            id="mentor-chat-input"
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Ask SLRmentor something about... SLRs!"
             className="chat-input"
           />
-          <button onClick={sendMessage} className="send-button">
+          <button id="mentor-send-button" onClick={sendMessage} className="send-button">
             Send
           </button>
         </div>

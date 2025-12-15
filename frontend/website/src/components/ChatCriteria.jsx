@@ -10,9 +10,8 @@ function ChatCriteria({ chatHash }) {
   const [criteriaExists, setCriteriaExists] = useState(false);
   const [error, setError] = useState(null);
 
-  const chatRef = useRef(null); // ref for chat history container
+  const chatRef = useRef(null);
 
-  // Fetch chat history
   useEffect(() => {
     const getChat = async () => {
       try {
@@ -55,12 +54,10 @@ function ChatCriteria({ chatHash }) {
           }
         });
 
-        // Set criteria from last entry if present
         const lastEntry = data.chat_history[data.chat_history.length - 1];
         if (lastEntry?.criteria) setCriteria(lastEntry.criteria);
       }
 
-      // If chat history is empty, add AI greeting
       if (formattedMessages.length === 0) {
         formattedMessages.push({
           sender: 'ai',
@@ -81,7 +78,6 @@ function ChatCriteria({ chatHash }) {
     setCriteriaExists(criteria.trim() !== '');
   }, [criteria]);
 
-  // Auto-scroll to bottom whenever messages change
   useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTo({
@@ -130,7 +126,7 @@ function ChatCriteria({ chatHash }) {
     <div className="chat-container">
       <h2 className="chat-header">Chat for Inclusion/Exclusion Criteria</h2>
 
-      <div ref={chatRef} className="chat-history">
+      <div ref={chatRef} className="chat-history" id="criteria-chat-history">
         {messages.map((msg, i) => (
           <Message
             key={i}
@@ -144,12 +140,14 @@ function ChatCriteria({ chatHash }) {
 
       {criteriaExists && (
         <>
-          <div className="criteria-block">
+          <div className="criteria-block" id="criteria-output">
             <h3 className="criteria-heading">Inclusion/Exclusion Criteria:</h3>
             <pre className="criteria-text">{criteria}</pre>
           </div>
+
           <div className="copy-button-wrapper">
             <button
+              id="criteria-copy"
               className="copy-button"
               onClick={() => navigator.clipboard.writeText(criteria)}
             >
@@ -161,13 +159,14 @@ function ChatCriteria({ chatHash }) {
 
       <div className="chat-input-container">
         <input
+          id="criteria-chat-input"
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Give me your study goal or general research question and I will help you to create your inclusion/exclusion criteria!"
           className="chat-input"
         />
-        <button onClick={sendMessage} className="send-button">
+        <button id="criteria-send-button" onClick={sendMessage} className="send-button">
           Send
         </button>
       </div>
