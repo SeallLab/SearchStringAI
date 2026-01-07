@@ -34,7 +34,12 @@ export default function NavBar({ startTour }) {
           <button
             id="nav-how-to"
             className={styles.navButton}
-            onClick={startTour}
+            onClick={() => {
+              console.log("How to Use clicked. startTour=", startTour);
+              if (typeof startTour === "function") startTour();
+              else console.error("startTour prop is not a function");
+            }}
+
           >
             How to Use SLRmentor
           </button>
